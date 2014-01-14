@@ -15,7 +15,7 @@ int main(int argc, char **argv)
     char addr[19] = { 0 };
     char name[248] = { 0 };
 
-    dev_id = hci_devid(BTMAC);
+    dev_id = hci_devid(BTMAC_SERVER);
     sock = hci_open_dev( dev_id );
     if (dev_id < 0 || sock < 0) {
         perror("opening socket");

@@ -1,0 +1,8 @@
+This is the code from bluez documentation:
+http://people.csail.mit.edu/albert/bluez-intro/c404.html
+
+The address of the Bluetooth dongle I'm using is defined in the Makefile.  To
+use a different dongle...
+
+make BTMAC_SERVER=00:02:72:C5:EC:2D BTMAC_CLIENT=90:02:92:C5:EC:2D
+
