@@ -10,10 +10,6 @@
 #include <bluetooth/hci.h>
 #include <bluetooth/hci_lib.h>
 
-/* This does not work on my 
-   Linux mazinger 3.2.0-57-generic #87-Ubuntu SMP Tue Nov 12 21:35:10 UTC 2013 x86_64 x86_64 x86_64 GNU/Linux
-*/
-
 int mgmt_create(void)
 {
         struct sockaddr_hci addr;
@@ -22,7 +18,7 @@ int mgmt_create(void)
         fd = socket(PF_BLUETOOTH, SOCK_RAW | SOCK_CLOEXEC | SOCK_NONBLOCK,
                                                                 BTPROTO_HCI);
         if (fd < 0) {
-                perror("crap!");
+                perror("crap socket!");
                 return -errno;
         }
 
@@ -33,7 +29,7 @@ int mgmt_create(void)
 
         if (bind(fd, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
                 int err = -errno;
-                perror("crap!");
+                perror("crap bind!");
                 close(fd);
                 return err;
         }
