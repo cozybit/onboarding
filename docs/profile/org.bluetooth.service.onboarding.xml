@@ -1,0 +1,166 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!-- Created with Liquid XML Studio Designer Edition 9.1.2.3326 (http://www.liquid-technologies.com) -->
+<!-- Copyright 2011 Bluetooth SIG, Inc. All rights reserved. -->
+<Service xsi:noNamespaceSchemaLocation="http://schemas.bluetooth.org/Documents/service.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" type="org.bluetooth.service.onboarding" uuid="C001" name="Onboarding" last-modified="2014-01-17" approved="No">
+	<InformativeText>
+		The Onboarding Service exposes characteristics required for an
+		Onboarder Device to configure an Onboardee to connect to a
+		wireless network.  It also allows the Onboardee to report
+		status back to Onboarder in real-time.
+	</InformativeText>
+	<Dependencies>
+	<Dependency>This service has no dependencies on other GATT-based services.</Dependency>
+	</Dependencies>
+	<GATTRequirements>
+		<Requirement subProcedure="Read Long Characteristic Value">Mandatory</Requirement>
+		<Requirement subProcedure="Write Characteristic Value">Mandatory</Requirement>
+		<Requirement subProcedure="Indications">Mandatory</Requirement>
+	</GATTRequirements>
+	<Transports>
+		<Classic>false</Classic>
+		<LowEnergy>true</LowEnergy>
+	</Transports>
+	<ErrorCodes></ErrorCodes>
+	<Characteristics>
+		<Characteristic name="ssid" type="org.bluetooth.characteristic.ssid">
+			<InformativeText>
+				This is the SSID of the target wifi network.
+			</InformativeText>
+			<Requirement>Mandatory</Requirement>
+			<Properties>
+				<Read>Mandatory</Read>
+				<Write>Mandatory</Write>
+				<WriteWithoutResponse>Excluded</WriteWithoutResponse>
+				<SignedWrite>Excluded</SignedWrite>
+				<ReliableWrite>Excluded</ReliableWrite>
+				<Notify>Excluded</Notify>
+				<Indicate>Excluded</Indicate>
+				<WritableAuxiliaries>Excluded</WritableAuxiliaries>
+				<Broadcast>Excluded</Broadcast>
+			</Properties>
+		</Characteristic>
+		<Characteristic name="passphrase" type="org.bluetooth.characteristic.passphrase">
+			<InformativeText>
+				This is the passphrase of the target wifi network.
+			</InformativeText>
+			<Requirement>Mandatory</Requirement>
+			<Properties>
+				<Read>Mandatory</Read>
+				<Write>Mandatory</Write>
+				<WriteWithoutResponse>Excluded</WriteWithoutResponse>
+				<SignedWrite>Excluded</SignedWrite>
+				<ReliableWrite>Excluded</ReliableWrite>
+				<Notify>Excluded</Notify>
+				<Indicate>Excluded</Indicate>
+				<WritableAuxiliaries>Excluded</WritableAuxiliaries>
+				<Broadcast>Excluded</Broadcast>
+			</Properties>
+		</Characteristic>
+		<Characteristic name="authentication" type="org.bluetooth.characteristic.authentication">
+			<InformativeText>
+				This is the authentication mode of the target wifi network.
+			</InformativeText>
+			<Requirement>Mandatory</Requirement>
+			<Properties>
+				<Read>Mandatory</Read>
+				<Write>Mandatory</Write>
+				<WriteWithoutResponse>Excluded</WriteWithoutResponse>
+				<SignedWrite>Excluded</SignedWrite>
+				<ReliableWrite>Excluded</ReliableWrite>
+				<Notify>Excluded</Notify>
+				<Indicate>Excluded</Indicate>
+				<WritableAuxiliaries>Excluded</WritableAuxiliaries>
+				<Broadcast>Excluded</Broadcast>
+			</Properties>
+		</Characteristic>
+		<Characteristic name="channel" type="org.bluetooth.characteristic.channel">
+			<InformativeText>
+				This is the channel of the target wifi network.
+			</InformativeText>
+			<Requirement>Mandatory</Requirement>
+			<Properties>
+				<Read>Mandatory</Read>
+				<Write>Mandatory</Write>
+				<WriteWithoutResponse>Excluded</WriteWithoutResponse>
+				<SignedWrite>Excluded</SignedWrite>
+				<ReliableWrite>Excluded</ReliableWrite>
+				<Notify>Excluded</Notify>
+				<Indicate>Excluded</Indicate>
+				<WritableAuxiliaries>Excluded</WritableAuxiliaries>
+				<Broadcast>Excluded</Broadcast>
+			</Properties>
+		</Characteristic>
+		<Characteristic name="connect" type="org.bluetooth.characteristic.connect">
+			<InformativeText>
+				This is the function that triggers a connection
+				to the target wifi network.  
+			</InformativeText>
+			<Requirement>Mandatory</Requirement>
+			<Properties>
+				<Read>Excluded</Read>
+				<Write>Mandatory</Write>
+				<WriteWithoutResponse>Excluded</WriteWithoutResponse>
+				<SignedWrite>Excluded</SignedWrite>
+				<ReliableWrite>Excluded</ReliableWrite>
+				<Notify>Excluded</Notify>
+				<Indicate>Excluded</Indicate>
+				<WritableAuxiliaries>Excluded</WritableAuxiliaries>
+				<Broadcast>Excluded</Broadcast>
+			</Properties>
+		</Characteristic>
+		<Characteristic name="disconnect" type="org.bluetooth.characteristic.disconnect">
+			<InformativeText>
+				This is the function that triggers a disconnection
+				to the target wifi network.  
+			</InformativeText>
+			<Requirement>Mandatory</Requirement>
+			<Properties>
+				<Read>Excluded</Read>
+				<Write>Mandatory</Write>
+				<WriteWithoutResponse>Excluded</WriteWithoutResponse>
+				<SignedWrite>Excluded</SignedWrite>
+				<ReliableWrite>Excluded</ReliableWrite>
+				<Notify>Excluded</Notify>
+				<Indicate>Excluded</Indicate>
+				<WritableAuxiliaries>Excluded</WritableAuxiliaries>
+				<Broadcast>Excluded</Broadcast>
+			</Properties>
+		</Characteristic>
+		<Characteristic name="status" type="org.bluetooth.characteristic.status">
+			<InformativeText>
+				This indication is used by the Onbordee to
+				report status to the Onboarder.
+			</InformativeText>
+			<Requirement>Mandatory</Requirement>
+			<Properties>
+				<Read>Mandatory</Read>
+				<Write>Excluded</Write>
+				<WriteWithoutResponse>Excluded</WriteWithoutResponse>
+				<SignedWrite>Excluded</SignedWrite>
+				<ReliableWrite>Excluded</ReliableWrite>
+				<Notify>Excluded</Notify>
+				<Indicate>Mandatory</Indicate>
+				<WritableAuxiliaries>Excluded</WritableAuxiliaries>
+				<Broadcast>Excluded</Broadcast>
+			</Properties>
+		</Characteristic>
+		<Characteristic name="long_status" type="org.bluetooth.characteristic.long_status">
+			<InformativeText>
+				This characteristic can be used by the Onbordee to
+				obtain a longer status message from the Onboarder.
+			</InformativeText>
+			<Requirement>Mandatory</Requirement>
+			<Properties>
+				<Read>Mandatory</Read>
+				<Write>Excluded</Write>
+				<WriteWithoutResponse>Excluded</WriteWithoutResponse>
+				<SignedWrite>Excluded</SignedWrite>
+				<ReliableWrite>Excluded</ReliableWrite>
+				<Notify>Excluded</Notify>
+				<Indicate>Excluded</Indicate>
+				<WritableAuxiliaries>Excluded</WritableAuxiliaries>
+				<Broadcast>Excluded</Broadcast>
+			</Properties>
+		</Characteristic>
+	</Characteristics>
+</Service>
