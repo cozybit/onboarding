@@ -208,12 +208,47 @@ void ctrlc_handler(int s)
     global_done = 1;
 }
 
+int set_local_name(char * name)
+{
+    int device_id = hci_devid(BTMAC_SERVER);
+
+    int device_handle = 0;
+    if((device_handle = hci_open_dev(device_id)) < 0)
+    {
+        perror("Could not open device");
+        exit(1);
+    }
+
+    change_local_name_cp cp;
+    memset(&cp, 0, sizeof(change_local_name_cp));
+
+    strncpy((char *) cp.name, name, sizeof(cp.name));
+
+    struct hci_request rq;
+    memset(&rq, 0, sizeof(rq));
+    rq.ogf    = OGF_HOST_CTL;
+    rq.ocf    = OCF_CHANGE_LOCAL_NAME;
+    rq.cparam = &cp;
+    rq.clen   = CHANGE_LOCAL_NAME_CP_SIZE;
+
+    if (hci_send_req(device_handle, &rq, 1000) < 0)
+        return -1;
+
+    hci_close_dev(device_handle);
+}
+
 void main(int argc, char **argv)
 {
     if(argc != 6)
     {
         fprintf(stderr, "Usage: %s <advertisement time in ms> <UUID> <major number> <minor number> <RSSI calibration amount>\n", argv[0]);
         exit(1);
+    }
+
+    if (set_local_name("Onboard Target")) 
+    {
+        perror("failed to set name");
+        return;
     }
 
     int rc = enable_advertising(atoi(argv[1]), argv[2], atoi(argv[3]), atoi(argv[4]), atoi(argv[5]));

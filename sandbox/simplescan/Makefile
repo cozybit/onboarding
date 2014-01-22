@@ -1,9 +1,9 @@
-BTMAC_SERVER := 00:02:72:C5:EC:2D
+BTMAC_SERVER := 00:02:72:C8:78:AD
 BTMAC_CLIENT := 60:D8:19:B0:E1:45
 
 BLUEZ_INCLUDES := ~/src/bluez-5.12/lib
 
-all: simplescan l2cap-server l2cap-client advertise
+all: simplescan l2cap-server l2cap-client advertise mgmt-api
 
 simplescan: simplescan.o
 	gcc -o $@ $^ -lbluetooth
@@ -36,4 +36,4 @@ mgmt-api.o: mgmt-api.c
 	gcc -I $(BLUEZ_INCLUDES) -o $@ -c $^ -DBTMAC_SERVER=\"$(BTMAC_SERVER)\" -DBTMAC_CLIENT=\"$(BTMAC_CLIENT)\"
 
 clean:
-	rm -f simplescan *.o l2cap-server mgmt-api
+	rm -f simplescan *.o l2cap-server l2cap-client mgmt-api advertise
