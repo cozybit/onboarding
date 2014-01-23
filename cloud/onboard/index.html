@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+{% autoescape true %}
+<html>
+  <head>
+    <link type="text/css" rel="stylesheet" href="/stylesheets/main.css" />
+  </head>
+  <body>
+    {% if node.status == "on" %}
+	    <img src="/images/{{ vendorid }}/toasteroven_on.png"/>
+    {% else %}
+	    <img src="/images/{{ vendorid }}/toasteroven_off.png"/>
+    {% endif %}
+    <div><b>Device: {{ deviceid }}</b></div>
+    <div>Status: {{ node.status }}</div>
+    <div>Last Update: {{ last_update }}</div>
+  </body>
+</html>
+{% endautoescape %}

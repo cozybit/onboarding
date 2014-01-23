@@ -1,0 +1,2 @@
+source env.sh
+dev_appserver.py onboardee
