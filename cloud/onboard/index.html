@@ -1,18 +1,44 @@
 <!DOCTYPE html>
+<!-- vi: set et ts=2 sw=2: -->
 {% autoescape true %}
 <html>
   <head>
     <link type="text/css" rel="stylesheet" href="/stylesheets/main.css" />
+    <script type="text/javascript" src="/_ah/channel/jsapi"></script>
   </head>
   <body>
     {% if node.status == "on" %}
-	    <img src="/images/{{ vendorid }}/toasteroven_on.png"/>
+      <img src="/images/{{ vendorid }}/toasteroven_on.png"/>
     {% else %}
-	    <img src="/images/{{ vendorid }}/toasteroven_off.png"/>
+      <img src="/images/{{ vendorid }}/toasteroven_off.png"/>
     {% endif %}
     <div><b>Device: {{ deviceid }}</b></div>
     <div>Status: {{ node.status }}</div>
     <div>Last Update: {{ last_update }}</div>
+
+    <!-- metrics -->
+    <script type="text/javascript"
+      src="https://sdk.librato.com/librato-sdk-v0.3.0-min.js"
+      data-librato_email="javier@cozybit.com"
+      data-librato_token=2a7978e341b3c1706c77b8c46f9700063ef73779f3ef706bcb8091e25d515ff4"
+    </script>
+    <div class="librato-metrics" data-instrument_id="30833412" style="height: 200px; width: 100px;" data-duration="30" data-source="status"></div>
+
+    <!-- asynchronous updates -->
+    <script>
+      onMessage = function(message) {
+        console.log(message.data)
+        location.reload();
+      };
+
+      channel = new goog.appengine.Channel('{{ token }}');
+      socket = channel.open();
+      //socket.onopen = onOpened;
+      socket.onmessage = onMessage;
+      //socket.onerror = onError;
+      //socket.onclose = onClose;
+    </script>
+
   </body>
 </html>
 {% endautoescape %}

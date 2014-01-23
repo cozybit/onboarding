@@ -4,8 +4,10 @@ runtime: python27
 api_version: 1
 threadsafe: true
 
-handlers:
+inbound_services:
+- channel_presence
 
+handlers:
 - url: /stylesheets
   static_dir: stylesheets
 

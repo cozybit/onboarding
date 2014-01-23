@@ -10,6 +10,7 @@ import datetime
 
 from google.appengine.ext import ndb
 from google.appengine.api import namespace_manager
+from google.appengine.api import channel
 
 import webapp2
 import jinja2
@@ -82,16 +83,27 @@ class CheckIn(webapp2.RequestHandler):
 		if (node == None):
 			node = DeviceNode(id=deviceid)
 			logging.info('new DeviceNode: ' + deviceid)
+	
+		if node.status != status:
+			node.status = status
+			clientid = vendorid + deviceid
+			channel.send_message(clientid, status)
 
-		node.status = status
 		node.put()
+
 		return
 
 class MainPage(webapp2.RequestHandler):
 
     def get(self):
         self.response.headers['Content-Type'] = 'text/plain'
-        self.response.write('Hello, World!')
+        self.response.write('TBD')
+
+class ChannelStatus(webapp2.RequestHandler):
+    def post(self):
+		clientid = self.request.get('from')
+		action = self.request.path.split('/')[-2]
+		logging.info('clientid ' + clientid + ' is now ' + action)
 
 class StatusPage(webapp2.RequestHandler):
 	def get(self, vendorid, deviceid):
@@ -109,7 +121,12 @@ class StatusPage(webapp2.RequestHandler):
 		last_update = datetime.datetime.now() - node.last_seen
 		logging.info('last_update: ' + str(last_update))
 
+		clientid = vendorid + deviceid
+		token = channel.create_channel(clientid)
+		# logging.info('token ' + token)
+
 		template_values = {
+			'token': token,
 			'vendorid': vendorid,
 			'deviceid': deviceid,
 			'node': node,
@@ -126,5 +143,7 @@ application = webapp2.WSGIApplication([
     ('/', MainPage),
 	('/checkin', CheckIn),
 	('/status/([-\w]+)/([-:\w]+)', StatusPage),
+	('/_ah/channel/connected/', ChannelStatus),
+	('/_ah/channel/disconnected/', ChannelStatus),
 ], debug=True)
 
