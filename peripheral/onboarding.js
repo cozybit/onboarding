@@ -1,6 +1,6 @@
 var util = require('util');
 
-var bleno = require('./index');
+var bleno = require('/home/linaro/ble/node_modules/bleno/index');
 var Wpa_cli = require('./wpa_cli');
 var Dhcp_cli = require('./dhcp_cli');
 var events = require('events');
@@ -35,12 +35,51 @@ cliBindings.onDhcpConnected = function (ssid) {
 	ip_addr = true;
 	getStatus();
 	// At this point we got internet...
+	checkin();
 }
 
 
 /* End of cli bindings object */
 
 cliBindings.init();
+
+function checkin () {
+
+var http = require('http');
+var querystring = require('querystring');
+
+var post_data = querystring.stringify({
+      'vendorid' : 'toastmaster',
+      'deviceid': '00:11:22:22:11:00',
+      'status': 'on'
+  });
+
+
+var options = {
+  hostname: 'cozyonboard.appspot.com',
+  port: 80,
+  path: '/checkin',
+  method: 'POST'
+};
+
+var req = http.request(options, function(res) {
+  console.log('STATUS: ' + res.statusCode);
+  console.log('HEADERS: ' + JSON.stringify(res.headers));
+  res.setEncoding('utf8');
+  res.on('data', function (chunk) {
+    console.log('BODY: ' + chunk);
+  });
+});
+
+req.on('error', function(e) {
+  console.log('problem with request: ' + e.message);
+});
+
+// write data to request body
+req.write(post_data);
+req.end();
+} 
+
 
 console.log('OnBoarding bleno app');
 
@@ -424,7 +463,7 @@ bleno.on('stateChange', function(state) {
   console.log('on -> stateChange: ' + state);
 
   if (state === 'poweredOn') {
-    bleno.startAdvertising('OnBoardingDev', ['FFFFFFFFC0C1FFFFC0C1201401000000']);
+    bleno.startAdvertising('JloDev', ['FFFFFFFFC0C1FFFFC0C1201401000000']);
   } else {
     bleno.stopAdvertising();
   }
