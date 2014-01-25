@@ -1,4 +1,7 @@
+@import url(http://fonts.googleapis.com/css?family=Cutive);
+
+  /*font-family: American Typewriter, Verdana, Helvetica, sans-serif;*/
+
 body {
-  font-family: American Typewriter, Verdana, Helvetica, sans-serif;
-  background-color: #7db700;
+  padding-top: 70px;
 }

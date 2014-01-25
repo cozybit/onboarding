@@ -1,35 +1,105 @@
 <!DOCTYPE html>
 <!-- vi: set et ts=2 sw=2: -->
 {% autoescape true %}
-<html>
+<html lang="en">
+
   <head>
-    <link type="text/css" rel="stylesheet" href="/stylesheets/main.css" />
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <!--
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css">
+    -->
+    <link rel="stylesheet" href="/bootstrap/css/bootstrap.css">
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap-theme.min.css">
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+    <![endif]-->
+
     <script type="text/javascript" src="/_ah/channel/jsapi"></script>
+    <link type="text/css" rel="stylesheet" href="/stylesheets/main.css" />
+
   </head>
   <body>
-    {% if node.status == "on" %}
-      <img src="/images/{{ vendorid }}/toasteroven_on.png"/>
-    {% else %}
-      <img src="/images/{{ vendorid }}/toasteroven_off.png"/>
-    {% endif %}
-    <div><b>Device: {{ deviceid }}</b></div>
-    <div>Status: {{ node.status }}</div>
-    <div>Last Update: {{ last_update }}</div>
 
-    <!-- metrics 
+    <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="#"><span class="glyphicon glyphicon-home"></span>&nbsp;&nbsp;Magic Wand Onboarding!</a>
+        </div>
+        <!--
+        <div class="collapse navbar-collapse">
+          <ul class="nav navbar-nav">
+            <li class="active"><a href="#">Home</a></li>
+            <li><a href="#about">About</a></li>
+            <li><a href="#contact">Contact</a></li>
+          </ul>
+        </div>
+        -->
+      </div>
+    </div>
+
+    <div class="container theme-showcase">
+    <div class="jumbotron">
+
+      {% if node.status == "on" %}
+        <img id="device_on" src="/images/{{ vendorid }}/toasteroven_on.png"/>
+        <img id="device_off" style="display: none" src="/images/{{ vendorid }}/toasteroven_off.png"/>
+      {% else %}
+        <img id="device_on" style="display: none" src="/images/{{ vendorid }}/toasteroven_on.png"/>
+        <img id="device_off" src="/images/{{ vendorid }}/toasteroven_off.png"/>
+      {% endif %}
+
+      <div class="container" style="font-size: 14px;">
+        <ul class="list-group">
+          <li class="list-group-item"><span class="glyphicon glyphicon-user"></span>&nbsp;&nbsp;<strong>Device: {{ deviceid }}</strong></li>
+          <li class="list-group-item"><span class="glyphicon glyphicon-fire"></span>&nbsp;&nbsp;Status: <span id="device_status">{{ node.status }}</span></li>
+          <li class="list-group-item"><span class="glyphicon glyphicon-dashboard"></span>&nbsp;&nbsp;Last Update: {{ last_update }}</li>
+        </ul>
+      </div>
+
+    </div>
+
+    <!--
     <script type="text/javascript"
       src="https://sdk.librato.com/librato-sdk-v0.3.0-min.js"
       data-librato_email="javier@cozybit.com"
-      data-librato_token=2a7978e341b3c1706c77b8c46f9700063ef73779f3ef706bcb8091e25d515ff4"
+      data-librato_token="2a7978e341b3c1706c77b8c46f9700063ef73779f3ef706bcb8091e25d515ff4">
     </script>
-    <div class="librato-metrics" data-instrument_id="30833412" style="height: 200px; width: 100px;" data-duration="30" data-source="status"></div>
+
+    <div class="librato-metrics" data-instrument_id="30833412" style="height: 200px; width: 300px;" data-duration="30" data-source="status"></div>
     -->
+
+    </div>
 
     <!-- asynchronous updates -->
     <script>
       onMessage = function(message) {
         console.log(message.data)
-        location.reload();
+        $('#device_status').text(message.data);
+        if(message.data == "on") {
+            $('#device_on').show();
+            $('#device_off').hide();
+        } else if(message.data == "off") {
+            $('#device_on').hide();
+            $('#device_off').show();
+        } else {
+            location.reload();
+        }
       };
 
       channel = new goog.appengine.Channel('{{ token }}');
@@ -40,6 +110,9 @@
       //socket.onclose = onClose;
     </script>
 
-  </body>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script src="/bootstrap/js/bootstrap.min.js"></script>
+
+      </body>
 </html>
 {% endautoescape %}
