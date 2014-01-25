@@ -53,6 +53,7 @@ class DeviceNode(ndb.Model):
     """Models onboardee device"""
     last_seen = ndb.DateTimeProperty(auto_now=True)
     status = ndb.StringProperty();
+    avg_energy = ndb.IntegerProperty(default=0);
 
 class CheckIn(webapp2.RequestHandler):
     def get(self):
@@ -86,10 +87,17 @@ class CheckIn(webapp2.RequestHandler):
             node = DeviceNode(id=deviceid)
             logging.info('new DeviceNode: ' + deviceid)
 
+        if 'reset_energy' in self.request.arguments():
+                node.avg_energy = 0
+
         if node.status != status:
             node.status = status
             clientid = vendorid + deviceid
-            channel.send_message(clientid, status)
+            if status == 'on':
+                node.avg_energy += 200
+                channel.send_message(clientid, str(node.avg_energy))
+            else:
+                channel.send_message(clientid, "off")
 
         node.put()
 

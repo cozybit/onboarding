@@ -24,6 +24,39 @@
     <script type="text/javascript" src="/_ah/channel/jsapi"></script>
     <link type="text/css" rel="stylesheet" href="/stylesheets/main.css" />
 
+    <script type='text/javascript' src='https://www.google.com/jsapi'></script>
+    <script type='text/javascript'>
+      google.load('visualization', '1', {packages:['gauge']});
+      google.setOnLoadCallback(drawChart);
+      var gauge, gauge_options, gauge_data;
+      function drawChart(arg, value) {
+        var avg_energy;
+
+        if (!value)
+        {
+          avg_energy = {{ node.avg_energy }};
+        } else {
+          avg_energy = value; 
+        }
+
+        gauge_data = google.visualization.arrayToDataTable([
+          ['Label', 'Value'],
+          ['Watts.h', avg_energy ],
+        ]);
+
+        gauge_options = {
+          width: 600, height: 180,
+          min: 0, max: 5000,
+          redFrom: 4000, redTo: 5000,
+          yellowFrom:3000, yellowTo: 4000,
+          minorTicks: 5
+        };
+
+        console.log("blah " + avg_energy);
+        gauge = new google.visualization.Gauge(document.getElementById('gauge_div'));
+        gauge.draw(gauge_data, gauge_options);
+      }
+    </script>
   </head>
   <body>
 
@@ -54,33 +87,25 @@
         </ul>
       </div>
 
+    <div id='gauge_div'></div>
+    </div>
     </div>
 
-    <!--
-    <script type="text/javascript"
-      src="https://sdk.librato.com/librato-sdk-v0.3.0-min.js"
-      data-librato_email="javier@cozybit.com"
-      data-librato_token="2a7978e341b3c1706c77b8c46f9700063ef73779f3ef706bcb8091e25d515ff4">
-    </script>
-
-    <div class="librato-metrics" data-instrument_id="30833412" style="height: 200px; width: 300px;" data-duration="30" data-source="status"></div>
-    -->
-
-    </div>
 
     <!-- asynchronous updates -->
     <script>
       onMessage = function(message) {
         console.log(message.data)
-        $('#device_status').text(message.data);
-        if(message.data == "on") {
-            $('#device_on').show();
-            $('#device_off').hide();
-        } else if(message.data == "off") {
+        if(message.data == "off") {
             $('#device_on').hide();
             $('#device_off').show();
+            $('#device_status').text(message.data);
         } else {
-            location.reload();
+            $('#device_on').show();
+            $('#device_off').hide();
+            $('#device_status').text("on");
+            gauge_data.setValue(0,1,parseInt(message.data)); 
+            gauge.draw(gauge_data, gauge_options);
         }
       };
 
