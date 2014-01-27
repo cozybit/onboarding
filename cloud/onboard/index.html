@@ -79,7 +79,8 @@
         <img id="device_off" class="img-responsive" src="/images/{{ vendorid }}/toasteroven_off.png"/>
       {% endif %}
 
-      <div class="container" style="font-size: 14px;">
+      <div class="row"> 
+      <div class="col-md-8 container" style="font-size: 14px;">
         <ul class="list-group">
           <li class="list-group-item"><span class="glyphicon glyphicon-user"></span>&nbsp;&nbsp;<strong>Device: {{ deviceid }}</strong></li>
           <li class="list-group-item"><span class="glyphicon glyphicon-fire"></span>&nbsp;&nbsp;Status: <span id="device_status">{{ node.status }}</span></li>
@@ -87,7 +88,9 @@
         </ul>
       </div>
 
-    <div id='gauge_div'></div>
+      <div class="col-md-4" id='gauge_div'></div>
+      </div>
+
     </div>
     </div>
 
