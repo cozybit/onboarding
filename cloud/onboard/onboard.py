@@ -34,11 +34,11 @@ def fuzzy_readable_time(delta):
     elif delta.total_seconds() < 3600:
         return str(delta.seconds / 60) + " minutes ago"
     elif delta.total_seconds() < 2 * 3600:
-        return str(delta.seconds / 60) + " hour ago"
+        return str(delta.seconds / 3600) + " hour ago"
     elif delta.total_seconds() < 24 * 3600:
         return str(delta.seconds / 3600) + " hours ago"
     elif delta.total_seconds() < 2 * 24 * 3600:
-        return str(delta.seconds / 3600) + " day ago"
+        return str(delta.days) + " day ago"
     else:
         return str(delta.days) + " days ago"
 
