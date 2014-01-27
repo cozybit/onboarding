@@ -83,7 +83,7 @@
         <ul class="list-group">
           <li class="list-group-item"><span class="glyphicon glyphicon-user"></span>&nbsp;&nbsp;<strong>Device: {{ deviceid }}</strong></li>
           <li class="list-group-item"><span class="glyphicon glyphicon-fire"></span>&nbsp;&nbsp;Status: <span id="device_status">{{ node.status }}</span></li>
-          <li class="list-group-item"><span class="glyphicon glyphicon-dashboard"></span>&nbsp;&nbsp;Last update: {{ last_update }}</li>
+          <li class="list-group-item"><span class="glyphicon glyphicon-dashboard"></span>&nbsp;&nbsp;Last update: <span id="last_update">{{ last_update }}</span></li>
         </ul>
       </div>
 
@@ -96,17 +96,19 @@
     <script>
       onMessage = function(message) {
         console.log(message.data)
-        if(message.data == "off") {
-            $('#device_on').hide();
-            $('#device_off').show();
-            $('#device_status').text(message.data);
-        } else {
+        var msg = jQuery.parseJSON(message.data)
+        if (msg.status == "on") {
             $('#device_on').show();
             $('#device_off').hide();
-            $('#device_status').text("on");
-            gauge_data.setValue(0,1,parseInt(message.data)); 
-            gauge.draw(gauge_data, gauge_options);
-        }
+        } else if(msg.status == "off") {
+            $('#device_off').show();
+            $('#device_on').hide();
+        } 
+        $('#device_status').text(msg.status);
+        $('#last_update').text(msg.last_update);
+            
+        gauge_data.setValue(0,1,msg.avg_energy); 
+        gauge.draw(gauge_data, gauge_options);
       };
 
       channel = new goog.appengine.Channel('{{ token }}');

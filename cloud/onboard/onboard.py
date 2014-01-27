@@ -7,6 +7,7 @@ import re
 import logging
 import os
 import datetime
+import json
 
 from google.appengine.ext import ndb
 from google.appengine.api import namespace_manager
@@ -92,14 +93,18 @@ class CheckIn(webapp2.RequestHandler):
 
         if node.status != status:
             node.status = status
-            clientid = vendorid + deviceid
             if status == 'on':
                 node.avg_energy += 200
-                channel.send_message(clientid, str(node.avg_energy))
-            else:
-                channel.send_message(clientid, "off")
 
         node.put()
+
+        clientid = vendorid + deviceid
+        obj = { 
+            'status': status,
+            'last_update': fuzzy_readable_time(datetime.datetime.now() - node.last_seen),
+            'avg_energy': node.avg_energy
+        }
+        channel.send_message(clientid, str(json.dumps(obj)))
 
         return
 
