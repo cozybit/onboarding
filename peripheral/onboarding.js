@@ -1,6 +1,6 @@
 var util = require('util');
 
-var bleno = require('/home/linaro/ble/node_modules/bleno/index');
+var bleno = require(process.env.ONBOARD_NODE_MODULES + '/bleno/index');
 var Wpa_cli = require('./wpa_cli');
 var Dhcp_cli = require('./dhcp_cli');
 var events = require('events');
@@ -93,7 +93,7 @@ var messageArray = [" ","Set SSID","Set Auth","Wrong Auth","Set passphrase","Set
 var statusIdx = 0;
 var detailedStatusIdx = 0;
 
-var ssid = 'cozyguest';
+var ssid = '';
 var authentication = 'OPEN';
 var passphrase = '';
 var channel = 0;
@@ -202,8 +202,8 @@ function connect() {
 		// TODO
 		// Do whatever needed to initialize connection...
 		// For instance contact wpa_supplicant
-		updateStatus(3,0);
-		cliBindings._wpa_cli.connect();
+		updateStatus(3, 0);
+		cliBindings._wpa_cli.connect(ssid, passphrase);
 	}
 }
 
@@ -231,7 +231,7 @@ function reset() {
 var StatusCharacteristic = function() {
 	StatusCharacteristic.super_.call(this, {
  		uuid: 'FFFFFFFFC0C1FFFFC0C1201401000001',
-		properties: ['notify']
+		properties: ['notify', 'read']
 	});
 };
 
@@ -252,6 +252,27 @@ StatusCharacteristic.prototype.onUnsubscribe = function() {
 StatusCharacteristic.prototype.onNotify = function() {
 	console.log('Notified StatusCharacteristic');
 };
+
+StatusCharacteristic.prototype.onReadRequest = function(offset, callback) {
+
+	var result = this.RESULT_SUCCESS;
+
+	var stat = statusArray[statusIdx];
+	var data = new Buffer(stat.length);
+
+	data.write(stat);
+
+	console.log("Read StatusCharacteristic");
+
+	// NO IDEA OF WHAT THIS CHECK IS USEFUL FOR...
+	if (offset > data.length) {
+		result = this.RESULT_INVALID_OFFSET;
+		data = null;
+	}
+
+	callback(result, data);
+}
+
 
 /*
  * DetailedStatus Characteristic
@@ -297,7 +318,7 @@ util.inherits(SSIDCharacteristic, BlenoCharacteristic);
 SSIDCharacteristic.prototype.onWriteRequest = function(data, offset, withoutResponse, callback) {
 
 	ssid = data.toString();
-	console.log("Wrote SSIDCharacteristic: " + ssid);
+	console.log("Wrote SSIDCharacteristic ("+ data.length +"): " + ssid);
 	callback(this.RESULT_SUCCESS);
 	getStatus();
 };
@@ -413,6 +434,7 @@ CommandCharacteristic.prototype.onWriteRequest = function(data, offset, withoutR
 	console.log("Wrote CommandCharacteristic: " + data);
 
 	var r = data.readUInt8(0);
+	var result = this.RESULT_SUCCESS;
 	
 	// Here we should check which command is
 	// Depending on the command execute the
@@ -420,7 +442,7 @@ CommandCharacteristic.prototype.onWriteRequest = function(data, offset, withoutR
 
 	switch(r) {
 		case CMD_CONNECT:
-			connect();
+			connect(ssid, passphrase);
 			break;
 		case CMD_DISCONNECT:
 			disconnect();
@@ -429,11 +451,12 @@ CommandCharacteristic.prototype.onWriteRequest = function(data, offset, withoutR
 			reset();
 			break;
 		default:
+			result = this.RESULT_UNLIKELY_ERROR;
 			console.log("Written Unknown command: " + data);
 	}
 
 
-	callback(this.RESULT_SUCCESS);
+	callback(result);
 	getStatus();
 };
 

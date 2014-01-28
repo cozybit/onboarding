@@ -5,7 +5,7 @@ var spawn = require('child_process').spawn;
 var util = require('util');
 
 var command = 'dhclient';
-var args = ['wlan0', '-v'];
+var args = [process.env.ONBOARD_WLAN_DEVICE, '-v'];
 
 var Dhcp_cli = function() {
 	this._dhcpcli;

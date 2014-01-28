@@ -60,11 +60,18 @@ Wpa_cli.prototype.sendCommand = function(command) {
 	this._wpacli.stdin.write(command.toString() + '\n');
 }
 
-Wpa_cli.prototype.connect = function() {
+Wpa_cli.prototype.connect = function(ssid, psk) {
 	// We guess that we will get id 0 :-S
 	this._wpacli.stdin.write("add_network\n");
-	this._wpacli.stdin.write("set_network 0 ssid \"cozyguest\"\n");
-	this._wpacli.stdin.write("set_network 0 key_mgmt NONE\n");
+	this._wpacli.stdin.write("set_network 0 ssid \"" + ssid + "\"\n");
+
+	if (/\S/.test(psk)) { // string is not empty and not just whitespace
+		this._wpacli.stdin.write("set_network 0 psk \"" + psk + "\"\n");
+	} else {
+		// assume this is an open network
+		this._wpacli.stdin.write("set_network 0 key_mgmt NONE\n");
+	}
+
 	this._wpacli.stdin.write("select_network 0\n");
 }
 
