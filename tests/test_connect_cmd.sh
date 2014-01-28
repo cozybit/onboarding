@@ -3,7 +3,6 @@
 set -e
 D=$(dirname $(readlink -f ${BASH_SOURCE}))
 
-REMOTE_MAC="00:02:72:C8:7C:A1"
 BASE_UUID="ffffffff-c0c1-ffff-c0c1-20140100000"
 
 SERVICE_UUID="${BASE_UUID}0"
@@ -20,12 +19,12 @@ attr_handles=`tempfile --suffix testdata`
 trap "rm -f /tmp/*.testdata" EXIT
 
 init_test_env() {
-    local handles=$(gatttool -b $REMOTE_MAC --primary | grep $SERVICE_UUID)
+    local handles=$(gatttool -b $TEST_REMOTE_MAC --primary | grep $SERVICE_UUID)
 
     handle_start=$(echo $handles | sed 's/attr handle = \(.*\),.*/\1/')
     handle_end=$(echo $handles | sed 's/.*end grp handle = \(.*\) .*[:].*/\1/')
 
-    gatttool -b $REMOTE_MAC --characteristics $handle_start $handle_end >$attr_handles
+    gatttool -b $TEST_REMOTE_MAC --characteristics $handle_start $handle_end >$attr_handles
 }
 
 function die () {
@@ -55,7 +54,7 @@ read_attr() {
     echo ">>> Read attr UUID" >&2
 
     #echo $value_handle
-    gatttool -b $REMOTE_MAC --char-read --handle=$value_handle \
+    gatttool -b $TEST_REMOTE_MAC --char-read --handle=$value_handle \
         | sed 's#Characteristic value/descriptor: \(.*\)#\1#' \
         | $D/stringify
 }
@@ -69,9 +68,10 @@ write_attr() {
     attr_handle=$(cat $attr_handles | grep $attr_uuid)
     value_handle=$(echo $attr_handle | sed 's/.*char value handle = \(.*\),.*/\1/')
 
-    gatttool -b $REMOTE_MAC --char-write-req --handle=$value_handle --value="$attr_value"
+    gatttool -b $TEST_REMOTE_MAC --char-write-req --handle=$value_handle --value="$attr_value"
 }
 
+[[ -n $TEST_REMOTE_MAC ]] || die "Please set TEST_REMOTE_MAC"
 [[ -n $TEST_NETWORK_SSID ]] || die "Please set TEST_NETWORK_SSID"
 [[ -n $TEST_NETWORK_PSK ]] || die "Please set TEST_NETWORK_PSK"
 
