@@ -1,7 +1,7 @@
 #! /bin/bash
 
 HOST=cozyonboard.appspot.com
-HOST=192.168.1.132:8080
+#HOST=192.168.1.132:8080
 
 STATE=-1
 
