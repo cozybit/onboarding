@@ -27,6 +27,4 @@ write_attr $PSK_ATTR_UUID "$(echo $TEST_NETWORK_PSK | $D/unstringify)"
 state=$(read_attr $STATUS_ATTR_UUID)
 [[ $state == "INITIALIZED" ]] || die "Expected 'INITIALIZED' state"
 
-echo ">>>"
-echo ">>> SUCCESS"
-echo ">>>"
+success

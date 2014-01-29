@@ -31,6 +31,4 @@ write_attr $PSK_ATTR_UUID "00"
 state=$(read_attr $STATUS_ATTR_UUID)
 [[ $state == "INITIALIZED" ]] || die "Expected 'INITIALIZED' state"
 
-echo ">>>"
-echo ">>> SUCCESS"
-echo ">>>"
+success

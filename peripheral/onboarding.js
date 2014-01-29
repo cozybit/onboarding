@@ -1,5 +1,20 @@
 var util = require('util');
 
+if ( ! process.env.ONBOARD_NODE_MODULES ) {
+    console.log("Please set ONBOARD_NODE_MODULES");
+    process.exit(1);
+}
+
+if ( ! process.env.ONBOARD_DEVICE_ID ) {
+    console.log("Please set ONBOARD_DEVICE_ID");
+    process.exit(1);
+}
+
+if ( ! process.env.ONBOARD_VENDOR_ID ) {
+    console.log("Please set ONBOARD_VENDOR_ID");
+    process.exit(1);
+}
+
 var bleno = require(process.env.ONBOARD_NODE_MODULES + '/bleno/index');
 var Wpa_cli = require('./wpa_cli');
 var Dhcp_cli = require('./dhcp_cli');
@@ -432,7 +447,7 @@ ChannelCharacteristic.prototype.onWriteRequest = function(data, offset, withoutR
 
 ChannelCharacteristic.prototype.onReadRequest = function(offset, callback) {
 	var result = this.RESULT_SUCCESS;
-	var data = new Buffer(ssid.length);
+	var data = new Buffer(channel.length);
 
 	data.write(channel);
 
@@ -489,6 +504,67 @@ CommandCharacteristic.prototype.onWriteRequest = function(data, offset, withoutR
 	getStatus();
 };
 
+/*
+ * DeviceId Characteristic
+ */
+var DeviceIdCharacteristic = function() {
+	DeviceIdCharacteristic.super_.call(this, {
+		uuid: 'FFFFFFFFC0C1FFFFC0C1201401000008',
+		properties: ['read'],
+	});
+};
+
+util.inherits(DeviceIdCharacteristic, BlenoCharacteristic);
+
+DeviceIdCharacteristic.prototype.onReadRequest = function(offset, callback) {
+	var result = this.RESULT_SUCCESS;
+
+    var deviceId = process.env.ONBOARD_DEVICE_ID;
+
+	var data = new Buffer(deviceId.length);
+	data.write(deviceId);
+
+	console.log("Read DeviceIdCharacteristic: " + deviceId);
+
+	// NO IDEA OF WHAT THIS CHECK IS USEFUL FOR...
+	if (offset > data.length) {
+		result = this.RESULT_INVALID_OFFSET;
+		data = null;
+	}
+
+	callback(result, data);
+}
+
+/*
+ * VendorId Characteristic
+ */
+var VendorIdCharacteristic = function() {
+	VendorIdCharacteristic.super_.call(this, {
+		uuid: 'FFFFFFFFC0C1FFFFC0C1201401000009',
+		properties: ['read'],
+	});
+};
+
+util.inherits(VendorIdCharacteristic, BlenoCharacteristic);
+
+VendorIdCharacteristic.prototype.onReadRequest = function(offset, callback) {
+	var result = this.RESULT_SUCCESS;
+
+    var vendorId = process.env.ONBOARD_VENDOR_ID;
+
+	var data = new Buffer(vendorId.length);
+	data.write(vendorId);
+
+	console.log("Read VendorIdCharacteristic: " + vendorId);
+
+	// NO IDEA OF WHAT THIS CHECK IS USEFUL FOR...
+	if (offset > data.length) {
+		result = this.RESULT_INVALID_OFFSET;
+		data = null;
+	}
+
+	callback(result, data);
+}
 
 /*
  * OnBoarding Service
@@ -504,7 +580,9 @@ function OnBoardingService() {
 			new AuthenticationCharacteristic(),
 			new PassphraseCharacteristic(),
 			new ChannelCharacteristic(),
-			new CommandCharacteristic()
+			new CommandCharacteristic(),
+            new DeviceIdCharacteristic(),
+            new VendorIdCharacteristic(),
     		]
 	});
 }
