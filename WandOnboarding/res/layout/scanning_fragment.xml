@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical">
+
+
+<!-- ViewFlipper can contains any view elements in this case it contains 5 ImageView view Component with different Images-->
+    <ViewFlipper
+        android:id="@+id/viewFlipper1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+         >
+
+        <ImageView
+            android:id="@+id/imageView1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical|center_horizontal"
+            android:src="@drawable/toaster" /><!-- Setting img1 from drawable folder in ImageView -->
+
+        
+    </ViewFlipper>
+    
+  <LinearLayout
+    android:id="@+id/linearLayout1"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical" >
+
+        <TextView
+            android:id="@+id/textView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.25"
+            android:textSize="20sp"
+            android:layout_gravity="center_vertical|center_horizontal"
+            android:text="@string/identifying" />
+        
+        <TextView
+            android:id="@+id/textView2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.25"
+            android:textSize="20sp"
+            android:layout_gravity="center_vertical|center_horizontal"
+            android:visibility="invisible"
+            android:text="@string/tap_to_onboard"/>
+        
+          <LinearLayout
+      		android:layout_width="wrap_content"
+      		android:layout_height="wrap_content"
+      	    android:orientation="horizontal" >
+      		
+			  <TextView
+			      android:id="@+id/status_textview"
+			      android:layout_width="wrap_content"
+			      android:layout_height="wrap_content"
+			      android:text="@string/status"/>
+			  
+			  <EditText
+			      android:id="@+id/status_edittext"
+			      android:layout_width="wrap_content"
+			      android:layout_height="wrap_content"
+			      android:enabled="false"
+			      android:ems="10" >
+			  </EditText>
+              
+  		  </LinearLayout>
+  		  
+          <LinearLayout
+      		android:layout_width="wrap_content"
+      		android:layout_height="wrap_content"
+      	    android:orientation="horizontal" >
+      		
+			  <TextView
+			      android:id="@+id/longstatus_textview"
+			      android:layout_width="wrap_content"
+			      android:layout_height="wrap_content"
+
+			      android:text="@string/detailed_status"/>
+			  
+			  <EditText
+			      android:id="@+id/longstatus_edittext"
+			      android:layout_width="wrap_content"
+			      android:layout_height="wrap_content"
+			      android:enabled="false"
+			      android:ems="10" >
+			  </EditText>
+              
+  		  </LinearLayout>
+        
+
+    </LinearLayout>
+
+
+
+</LinearLayout>
