@@ -78,20 +78,36 @@ req.on('error', function(e) {
 // write data to request body
 req.write(post_data);
 req.end();
-} 
+}
 
 
 console.log('OnBoarding bleno app');
 
 /* Global variables */
 
-var statusArray = ["DISCONNECTED","INITIALIZING","INITIALIZED","CONNECTING","CONNECTED","FAILED"];
+var statuses = {
+    DISCONNECTED: { id: 0, data: "DISCONNECTED" },
+    INITIALIZING: { id: 1, data: "INITIALIZING" },
+    INITIALIZED : { id: 2, data: "INITIALIZED" },
+    CONNECTING  : { id: 3, data: "CONNECTING" },
+    CONNECTED   : { id: 4, data: "CONNECTED" },
+    FAILED      : { id: 5, data: "FAILED" },
+};
 
-var messageArray = [" ","Set SSID","Set Auth","Wrong Auth","Set passphrase","Set Channel or CONNECT cmd",
-		    "Authenticating", "Getting IP address","Connection established"];
+var messages = {
+    NONE       : { id: 0, data: " " },
+    SET_SSID   : { id: 1, data: "Set SSID" },
+    SET_AUTH   : { id: 2, data: "Set authentication type"},
+    WRONG_AUTH : { id: 3, data: "Wrong authentication type selected" },
+    SET_PSK    : { id: 4, data: "Set passphrase" },
+    SET_CHAN   : { id: 5, data: "Set channel or issue CONNECT cmd" },
+    AUTHING    : { id: 6, data: "Authenticating"},
+    GETTING_IP : { id: 7, data: "Getting IP address"},
+    CONN_ESTAB : { id: 8, data: "Connection established"},
+}
 
-var statusIdx = 0;
-var detailedStatusIdx = 0;
+var theStatus = [statuses.DISCONNECTED];
+var theDetails = [messages.NONE];
 
 var ssid = '';
 var authentication = 'OPEN';
@@ -122,12 +138,12 @@ var DetailedStatusCallback;
  */
 
 function updateStatus(_status,_detailed) {
-	statusIdx = _status;
-	detailedStatusIdx = _detailed;
+	theStatus[0] = _status;
+	theDetails[0] = _detailed;
 
-	console.log("Updated status to: " + statusArray[_status] + " detailed: " + messageArray[_detailed]);
-	var data = new Buffer(statusArray[_status].length);
-	data.write(statusArray[_status], 0);
+	console.log("Updated status to: " + theStatus[0].data + " detailed: " + theDetails[0].data);
+	var data = new Buffer(theStatus[0].data.length);
+	data.write(theStatus[0].data, 0);
 	if (StatusCallback != null)
 		StatusCallback(data);
 	// TODO Enable this at some point
@@ -135,74 +151,73 @@ function updateStatus(_status,_detailed) {
 	//	DetailedStatusCallback(data);
 }
 
-/* 
- * Get current status function, this function 
+/*
+ * Get current status function, this function
  * should be called after each attr write
  */
 
 function getStatus() {
 
 	/* We only check the field values when initializing */
-	if (statusIdx < 3) {
+	if (theStatus[0].id < statuses.CONNECTING.id) {
 		if (ssid.length == 0) {
-			updateStatus(1,1);
+			updateStatus(statuses.INITIALIZING, messages.SET_SSID);
 			return;
 		}
 
 		if (authentication.length == 0) {
-			updateStatus(1,2);
+			updateStatus(statuses.INITIALIZING, messages.SET_AUTH);
 			return;
 		}
-		
+
 		switch (authentication) {
 			case AUTH_OPEN:
 				break;
 			case AUTH_WEP:
-			case AUTH_WPA:	
+			case AUTH_WPA:
 				if (passphrase.length == 0) {
-					updateStatus(1,4);
+			        updateStatus(statuses.INITIALIZING, messages.SET_PSK);
 					return;
 				}
-				break;	
+				break;
 			default:
-				updateStatus(1,3);
+			    updateStatus(statuses.INITIALIZING, messages.WRONG_AUTH);
 				return;
 		}
 
-		/* 
+		/*
 		 * If we arrive here all mandatory attr have been set
-		 * Inform the user that is possible to set the channel 
+		 * Inform the user that is possible to set the channel
 		 */
-		updateStatus(2,5);
-	}
-	
-	/* CONNECTING */
-	if (statusIdx == 3) {
-		if (!wlan_link) {
-			updateStatus(3,6);
-			return;
-		}
-		
-		if (!ip_addr) {
-			updateStatus(3,7);
-			return;
-		}
-		
-		/* We are connected to the AP */
-		updateStatus(4,8);
+		updateStatus(statuses.INITIALIZED, messages.SET_CHAN);
 	}
 
+	/* CONNECTING */
+	if (theStatus[0].id == statuses.CONNECTING.id) {
+		if (!wlan_link) {
+			updateStatus(statuses.CONNECTING, messages.AUTHING);
+			return;
+		}
+
+		if (!ip_addr) {
+			updateStatus(statuses.CONNECTING, messages.GETTING_IP);
+			return;
+		}
+
+		/* We are connected to the AP */
+		updateStatus(statuses.CONNECTED, messages.CONN_ESTAB);
+	}
 }
 
 /* Connect function */
 
 function connect() {
 
-	if (statusIdx == 2) {
+	if (theStatus[0].id == statuses.INITIALIZED.id) {
 		// TODO
 		// Do whatever needed to initialize connection...
 		// For instance contact wpa_supplicant
-		updateStatus(3, 0);
+		updateStatus(statuses.CONNECTING, messages.NONE);
 		cliBindings._wpa_cli.connect(ssid, passphrase);
 	}
 }
@@ -210,9 +225,9 @@ function connect() {
 /* Disconnect function */
 
 function disconnect() {
-	if (statusIdx > 2) {
-                // TODO Disconnect
-		updateStatus(0,0);
+	if (theStatus[0].id > statuses.INITIALIZED.id) {
+        // TODO Disconnect
+		updateStatus(statuses.DISCONNECTED, messages.NONE);
 	}
 }
 
@@ -257,12 +272,12 @@ StatusCharacteristic.prototype.onReadRequest = function(offset, callback) {
 
 	var result = this.RESULT_SUCCESS;
 
-	var stat = statusArray[statusIdx];
+	var stat = theStatus[0].data;
 	var data = new Buffer(stat.length);
 
 	data.write(stat);
 
-	console.log("Read StatusCharacteristic");
+	console.log("Read StatusCharacteristic: " + stat);
 
 	// NO IDEA OF WHAT THIS CHECK IS USEFUL FOR...
 	if (offset > data.length) {
@@ -435,7 +450,7 @@ CommandCharacteristic.prototype.onWriteRequest = function(data, offset, withoutR
 
 	var r = data.readUInt8(0);
 	var result = this.RESULT_SUCCESS;
-	
+
 	// Here we should check which command is
 	// Depending on the command execute the
 	// necessary function

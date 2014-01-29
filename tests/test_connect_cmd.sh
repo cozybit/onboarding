@@ -98,4 +98,6 @@ sleep_countdown 5 "Waiting for connection..."
 state=$(read_attr $STATUS_ATTR_UUID)
 [[ $state == "CONNECTED" ]] || die "Expected 'CONNECTED' state"
 
-echo "SUCCESS"
+echo ">>>"
+echo ">>> SUCCESS"
+echo ">>>"
