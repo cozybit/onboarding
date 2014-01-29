@@ -143,11 +143,14 @@ function updateStatus(_status,_detailed) {
 
 	console.log("Updated status to: " + theStatus[0].data + " detailed: " + theDetails[0].data);
 	var data = new Buffer(theStatus[0].data.length);
+	var data2 = new Buffer(theDetails[0].data.length);
 	data.write(theStatus[0].data, 0);
+	data2.write(theDetails[0].data, 0);
+
 	if (StatusCallback != null)
 		StatusCallback(data);
 	if (DetailedStatusCallback != null)
-		DetailedStatusCallback(data);
+		DetailedStatusCallback(data2);
 }
 
 /*
