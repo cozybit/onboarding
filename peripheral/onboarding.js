@@ -104,6 +104,7 @@ var messages = {
     AUTHING    : { id: 6, data: "Authenticating"},
     GETTING_IP : { id: 7, data: "Getting IP address"},
     CONN_ESTAB : { id: 8, data: "Connection established"},
+    PSK_NOT_REQ: { id: 9, data: "Passphrase is not required for open network" },
 }
 
 var theStatus = [statuses.DISCONNECTED];
@@ -119,8 +120,7 @@ var ip_addr = false;
 /* Auth type List */
 
 var AUTH_OPEN = "OPEN";
-var AUTH_WEP = "WEP";
-var AUTH_WPA = "WPA";
+var AUTH_SECURE = "SECURE";
 
 /* Command List */
 
@@ -174,9 +174,12 @@ function getStatus() {
 
 		switch (authentication) {
 			case AUTH_OPEN:
+				if (passphrase.length != 0) {
+			        updateStatus(statuses.INITIALIZING, messages.PSK_NOT_REQ);
+                    return;
+                }
 				break;
-			case AUTH_WEP:
-			case AUTH_WPA:
+			case AUTH_SECURE:
 				if (passphrase.length == 0) {
 			        updateStatus(statuses.INITIALIZING, messages.SET_PSK);
 					return;
@@ -220,7 +223,11 @@ function connect() {
 		// Do whatever needed to initialize connection...
 		// For instance contact wpa_supplicant
 		updateStatus(statuses.CONNECTING, messages.NONE);
-		cliBindings._wpa_cli.connect(ssid, passphrase);
+        if ( authentication == AUTH_OPEN ) {
+		    cliBindings._wpa_cli.connect(ssid, '');
+        } else {
+		    cliBindings._wpa_cli.connect(ssid, passphrase);
+        }
 	}
 }
 
@@ -392,8 +399,13 @@ util.inherits(PassphraseCharacteristic, BlenoCharacteristic);
 
 PassphraseCharacteristic.prototype.onWriteRequest = function(data, offset, withoutResponse, callback) {
 
-	passphrase = data.toString();
-	console.log("Wrote PassphraseCharacteristic:" + passphrase);
+    if ( (data.length - offset) === 1 && data[0] === 0 ) {
+        passphrase = '';
+    } else {
+    	passphrase = data.toString();
+    }
+
+	console.log("Wrote PassphraseCharacteristic (" + passphrase.length + "):" + passphrase);
 	callback(this.RESULT_SUCCESS);
 	getStatus();
 };

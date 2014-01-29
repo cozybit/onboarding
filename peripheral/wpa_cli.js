@@ -16,7 +16,7 @@ var Wpa_cli = function() {
 	// Disconnect and remove network with id 0
 	this._wpacli.stdin.write("disconnect\n");
 	this._wpacli.stdin.write("remove_network 0\n");
-	
+
 	this._buffer = "";
 }
 
@@ -39,7 +39,7 @@ Wpa_cli.prototype.onStdoutData = function(data) {
 	while ((newLineIndex = this._buffer.indexOf('\n')) !== -1) {
 		var line = this._buffer.substring(0, newLineIndex);
 		var found;
-		    
+
 		this._buffer = this._buffer.substring(newLineIndex + 1);
 
 		debug('line = ' + line);
