@@ -110,7 +110,7 @@ var theStatus = [statuses.DISCONNECTED];
 var theDetails = [messages.NONE];
 
 var ssid = '';
-var authentication = 'OPEN';
+var authentication = '';
 var passphrase = '';
 var channel = 0;
 var wlan_link = false;
@@ -146,9 +146,8 @@ function updateStatus(_status,_detailed) {
 	data.write(theStatus[0].data, 0);
 	if (StatusCallback != null)
 		StatusCallback(data);
-	// TODO Enable this at some point
-	//if (DetailedStatusCallback != null)
-	//	DetailedStatusCallback(data);
+	if (DetailedStatusCallback != null)
+		DetailedStatusCallback(data);
 }
 
 /*
