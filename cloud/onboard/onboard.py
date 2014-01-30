@@ -132,7 +132,7 @@ class StatusPage(webapp2.RequestHandler):
             self.error(400)
             return
 
-		deviceid = deviceid.lower()
+        deviceid = deviceid.lower()
         node = DeviceNode.get_by_id(deviceid)
         last_update = None
         if node is not None:
