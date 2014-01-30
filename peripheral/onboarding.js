@@ -227,6 +227,10 @@ function getStatus() {
 		/* We are connected to the AP */
 		updateStatus(statuses.CONNECTED, messages.CONN_ESTAB);
 	}
+	/* CONNECTED */
+	if (theStatus[0].id == statuses.CONNECTED.id) {
+		updateStatus(theStatus[0], theDetails[0]);
+	} 
 }
 
 /* Connect function */
