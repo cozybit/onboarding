@@ -250,7 +250,7 @@ function connect() {
 
 function disconnect() {
 	if (theStatus[0].id > statuses.INITIALIZED.id) {
-        // TODO Disconnect
+		cliBindings._wpa_cli.disconnect();
 		updateStatus(statuses.DISCONNECTED, messages.NONE);
 	}
 }
@@ -262,6 +262,7 @@ function reset() {
 	authentication = '';
 	passphrase = '';
 	channel = 0;
+    disconnect();
 }
 /*
  * Status Characteristic
@@ -487,6 +488,7 @@ CommandCharacteristic.prototype.onWriteRequest = function(data, offset, withoutR
 	switch(r) {
 		case CMD_CONNECT:
 			connect(ssid, passphrase);
+	        getStatus();
 			break;
 		case CMD_DISCONNECT:
 			disconnect();
@@ -499,9 +501,7 @@ CommandCharacteristic.prototype.onWriteRequest = function(data, offset, withoutR
 			console.log("Written Unknown command: " + data);
 	}
 
-
 	callback(result);
-	getStatus();
 };
 
 /*

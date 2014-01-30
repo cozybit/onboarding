@@ -13,9 +13,7 @@ var Wpa_cli = function() {
 	this._wpacli.stdout.on('data', this.onStdoutData.bind(this));
 	this._wpacli.stderr.on('data', this.onStderrData.bind(this));
 
-	// Disconnect and remove network with id 0
-	this._wpacli.stdin.write("disconnect\n");
-	this._wpacli.stdin.write("remove_network 0\n");
+    this.disconnect();
 
 	this._buffer = "";
 }
@@ -73,6 +71,14 @@ Wpa_cli.prototype.connect = function(ssid, psk) {
 	}
 
 	this._wpacli.stdin.write("select_network 0\n");
+}
+
+Wpa_cli.prototype.disconnect = function() {
+	this._wpacli.stdin.write("disconnect\n");
+	// Disconnect and remove network with id 0 through id 9
+    for (var x = 0; x < 10; x ++) {
+	    this._wpacli.stdin.write("remove_network " + x +"\n");
+    }
 }
 
 module.exports = Wpa_cli;
