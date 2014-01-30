@@ -99,7 +99,7 @@ class CheckIn(webapp2.RequestHandler):
         node.put()
 
         clientid = vendorid + deviceid
-        obj = { 
+        obj = {
             'status': status,
             'last_update': fuzzy_readable_time(datetime.datetime.now() - node.last_seen),
             'avg_energy': node.avg_energy
@@ -132,7 +132,7 @@ class StatusPage(webapp2.RequestHandler):
             self.error(400)
             return
 
-        node = DeviceNode.get_by_id(deviceid)
+        node = DeviceNode.get_by_id(deviceid.lower())
         last_update = None
         if node is not None:
             last_update = datetime.datetime.now() - node.last_seen
