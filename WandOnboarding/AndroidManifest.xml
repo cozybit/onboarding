@@ -29,7 +29,8 @@
 
 	    <activity
 	        android:name="com.cozybit.onboarding.app.OnboardingActivity"
-	        android:label="@string/onboarding" >
+	        android:label="@string/onboarding"
+	        android:screenOrientation="portrait" >
 	        <intent-filter>
 	            <action android:name="android.intent.action.MAIN" />
 	            <category android:name="android.intent.category.LAUNCHER" />
@@ -37,7 +38,8 @@
 	    </activity>
 	    <activity
 	        android:name="com.cozybit.onboarding.app.WiFiScannerActivity"
-	        android:label="@string/onboarding_setup" >
+	        android:label="@string/onboarding_setup"
+	        android:screenOrientation="portrait" >
 	        <intent-filter>
 	            <action android:name="android.intent.action.MAIN" />
 	            <category android:name="android.intent.category.LAUNCHER" />
