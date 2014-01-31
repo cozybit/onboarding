@@ -41,7 +41,7 @@ public class OnboardingActivity extends FragmentActivity {
 	public static final int VENDOR_ID_READ = 11;
 	public static final int DEVICE_ID_READ = 12;
 
-	private static int RSSI = -90;
+	private static int RSSI = -30;
 	
 	private Handler mHandler;
 	private MyAdapter mAdapter;
