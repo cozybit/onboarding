@@ -248,7 +248,10 @@ public class WiFiScannerActivity extends Activity {
 		SharedPreferences prefs = getSharedPreferences("wifi_network", MODE_PRIVATE);
 		SharedPreferences.Editor editor = prefs.edit();
 		editor.putString("SSID", wifiNetwork.SSID);
-		editor.putString("authentication", wifiNetwork.authentication);
+		if (!wifiNetwork.authentication.equals("OPEN"))
+			editor.putString("authentication", "SECURE");
+		else
+			editor.putString("authentication", wifiNetwork.authentication);
 		editor.putString("password", wifiNetwork.password);
 		editor.putInt("networkId", wifiNetwork.networkId);
 		editor.commit();
