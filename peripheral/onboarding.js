@@ -1,10 +1,5 @@
 var util = require('util');
 
-if ( ! process.env.ONBOARD_NODE_MODULES ) {
-    console.log("Please set ONBOARD_NODE_MODULES");
-    process.exit(1);
-}
-
 if ( ! process.env.ONBOARD_DEVICE_ID ) {
     console.log("Please set ONBOARD_DEVICE_ID");
     process.exit(1);
@@ -15,7 +10,7 @@ if ( ! process.env.ONBOARD_VENDOR_ID ) {
     process.exit(1);
 }
 
-var bleno = require(process.env.ONBOARD_NODE_MODULES + '/bleno/index');
+var bleno = require('bleno');
 var Wpa_cli = require('./wpa_cli');
 var Dhcp_cli = require('./dhcp_cli');
 var events = require('events');

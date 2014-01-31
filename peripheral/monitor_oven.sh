@@ -1,7 +1,13 @@
 #! /bin/bash
 
+D=$(dirname $(readlink -f ${BASH_SOURCE}))
+source $D/library.sh
+
 HOST=cozyonboard.appspot.com
-#HOST=192.168.1.132:8080
+#HOST=192.168.1.104:8080
+
+DEV_ID=$1
+[[ -n $DEV_ID ]] || die "Usage: monitor_over.sh <devid>"
 
 STATE=-1
 
@@ -13,5 +19,5 @@ do
 	[ ${PREV_STATE} -eq ${STATE} ] && continue
 	[ ${STATE} -eq "0" ] && STATUS="off"
 	[ ${STATE} -eq "1" ] && STATUS="on"
-	wget -O /dev/null "http://$HOST/checkin?vendorid=toastmaster&deviceid=00:11:22:22:11:00&status=${STATUS}"
+	wget -O /dev/null "http://$HOST/checkin?vendorid=toastmaster&deviceid=${DEV_ID}&status=${STATUS}"
 done
