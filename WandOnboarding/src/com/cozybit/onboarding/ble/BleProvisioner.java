@@ -16,7 +16,6 @@ import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
@@ -40,17 +39,19 @@ public class BleProvisioner {
 		SCANNING, 		// BLE interface is ON and scanning
 		CONNECTING, 	// Device found trying to connect
 		CONNECTED, 		// Connected as central device
+		DISCONNECTING,  // Disconnecting
 		DISCONNECTED,   // Disconnected 
-		FAILED;			// Provisioner has failed
+		FAILED,			// Provisioner has failed
+		PAUSED;			// Provisioner is paused
 	}
 	
 	private State mState = State.DISABLED;
+	private State mSavedState;
+	
 	private String TAG = "BleProvisioner";
 
 	private UUID mServiceUUID;	
 	private int mRssiThreshold;
-	
-	private static final long SCAN_PERIOD = 1000;
 	
 	private final BluetoothGattCallback mGattCallback = new BluetoothGattCallback() {
         @Override
@@ -65,9 +66,14 @@ public class BleProvisioner {
                         mBluetoothGatt.discoverServices());
                 
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                mState = State.DISCONNECTED;
-                Log.i(TAG, "Disconnected from GATT server.");
-                mHandler.sendEmptyMessage(OnboardingActivity.GATT_DISCONNECTED);
+            	if (mState == State.DISCONNECTING) {
+            		mState = State.DISCONNECTED;
+            		Log.i(TAG, "Correctly disconnected from GATT server.");
+            		mHandler.sendEmptyMessage(OnboardingActivity.GATT_DISCONNECTED);
+            	} else {
+            		Log.i(TAG, "Something wrong happened and we're disconnected from GATT server.");
+            		mHandler.sendEmptyMessage(OnboardingActivity.GATT_FAILED);
+            	}
             }
         }
 
@@ -88,6 +94,18 @@ public class BleProvisioner {
             if (status == BluetoothGatt.GATT_SUCCESS) {
             	 Log.d(TAG, "onCharacteristicRead received: " + status);
             	 mBleBlockingQueue.newResponse(characteristic);
+            	 
+            	 final byte[] data = characteristic.getValue();
+                 if (data != null && data.length > 0) {
+
+                 	String value = new String(data);
+            	 	
+     	       	 	if (characteristic.getUuid().equals(OnboardingGattService.CHARACTERISTIC_VENDOR_ID)) {
+     	       	 		mHandler.sendMessage(Message.obtain(mHandler, OnboardingActivity.VENDOR_ID_READ, value));
+     	       	 	} else if (characteristic.getUuid().equals(OnboardingGattService.CHARACTERISTIC_DEVICE_ID)) {
+     	       	 		mHandler.sendMessage(Message.obtain(mHandler, OnboardingActivity.DEVICE_ID_READ, value));
+     	       	 	}
+                 }
             }
         }
 
@@ -98,7 +116,6 @@ public class BleProvisioner {
        	 	// TODO notifications are not passed to the blocking queue
        	 	// mBleBlockingQueue.newResponse(characteristic);
        	 	
-            // For all other profiles, writes the data formatted in HEX.
             final byte[] data = characteristic.getValue();
             if (data != null && data.length > 0) {
 
@@ -152,7 +169,7 @@ public class BleProvisioner {
             return false;
         }
         
-        if (!isBtEnabled())
+        if (!isEnabled())
         	mBluetoothAdapter.enable();
         
         // Create the Blocking Queue with it's own thread and start it.
@@ -164,7 +181,7 @@ public class BleProvisioner {
         return true;
 	}
 	
-	public boolean isBtEnabled() {
+	public boolean isEnabled() {
 		
 		if (mBluetoothAdapter == null)
 			return false;
@@ -172,11 +189,12 @@ public class BleProvisioner {
 		return mBluetoothAdapter.isEnabled();
 	}
 	
-	private boolean deviceIsNexus4() {
+/*	private boolean deviceIsNexus4() {
 		if (Build.MODEL.equals("Nexus 4"))
 			return true;
 		return false;
 	}
+*/
 	
 	public void startScanLeDevices(UUID uuid, int rssiThreshold) {
 		mServiceUUID = uuid;
@@ -187,8 +205,7 @@ public class BleProvisioner {
 	
 	public void startScanLeDevices() {
 		
-		if (deviceIsNexus4()) {
-			// TODO Add workaround for Nexus 4 devices
+/*		if (deviceIsNexus4()) {
 			mHandler.postDelayed(new Runnable() {
 	            @Override
 	            public void run() {
@@ -196,7 +213,7 @@ public class BleProvisioner {
 	            }
 	        }, SCAN_PERIOD);
 		}
-		
+*/		
         mState = State.SCANNING;
         mBluetoothAdapter.startLeScan(mLeScanCallback);
 	}
@@ -206,6 +223,10 @@ public class BleProvisioner {
 		if (mState == State.SCANNING) { 
 			mState = State.INITIALIZED;
 	        mBluetoothAdapter.stopLeScan(mLeScanCallback);
+		} else if (mState == State.CONNECTING) {
+			
+		} else if (mState == State.CONNECTED) {
+
 		}
 	}
 	
@@ -261,7 +282,7 @@ public class BleProvisioner {
         public void onLeScan(final BluetoothDevice device, final int rssi, byte[] scanRecord) {
         	if (rssi >= mRssiThreshold) { // If device is close enough 
         		if (hasServiceUUID(scanRecord)) { // If device advertise searched UUID
-        			Log.d(TAG,"YEAH!");
+        			Log.d(TAG,"Found an onboarding device!");
         			stopScanLeDevices();
         			mDevice = device;
         			mHandler.sendEmptyMessage(OnboardingActivity.DETECTED_DEVICE);
@@ -270,7 +291,7 @@ public class BleProvisioner {
         }  		          
     };
 
-	public boolean connectToDevice() {
+	public boolean connectGatt() {
 		if (mBluetoothAdapter == null || mDevice == null) {
 			Log.w(TAG, "BluetoothAdapter not initialized or undetected device.");
 			return false;
@@ -289,6 +310,23 @@ public class BleProvisioner {
 		Log.d(TAG, "Trying to create a new connection.");
 		mState = State.CONNECTING;
 		return true;
+	}
+	
+	public boolean disconnectGatt() {
+		
+		if (mBluetoothAdapter == null || mDevice == null) {
+			Log.w(TAG, "BluetoothAdapter not initialized or undetected device.");
+			return false;
+		}
+		
+		if (mBluetoothGatt == null) {
+            Log.d(TAG, "BluetoothGatt is null.");
+            return false;
+		}
+        mBluetoothGatt.disconnect();
+		Log.d(TAG, "Disconnecting from gatt server.");
+		mState = State.DISCONNECTING;
+        return true;
 	}
 	
 	protected BluetoothGattCharacteristic getCharacteristicFromUUID(
@@ -401,5 +439,37 @@ public class BleProvisioner {
   			}
   		}, true);
         
+	}
+
+	public void pause() {
+		mSavedState = mState;
+		mState = State.PAUSED;
+		// Here depending on the state where we're we should do different things...
+		// Stop Scanning
+		// Disconnect from Gatt Server
+		if (mSavedState == State.SCANNING) {
+			stopScanLeDevices();
+		} else if (mSavedState == State.CONNECTED ||
+				   mSavedState ==State.CONNECTING) {
+			disconnectGatt();
+		}
+
+	}
+
+	public void resume() {
+		if (mState == State.PAUSED) {
+			
+			// Then here we need to recover and get to the state were we were before
+			// Start Scan again if scanning
+			// Connect to GATT Server if connected
+			
+			if (mSavedState == State.SCANNING) {
+				startScanLeDevices();
+			} else if (mSavedState == State.CONNECTED  ||
+					   mSavedState ==  State.CONNECTING) {
+				connectGatt();
+			}
+			mSavedState = null;
+		}
 	}
 }

@@ -1,6 +1,9 @@
 package com.cozybit.onboarding.app;
 
+import android.content.Context;
 import android.content.SharedPreferences;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -30,11 +33,13 @@ public class OnboardingActivity extends FragmentActivity {
 	public static final int DETECTED_DEVICE = 3;
 	public static final int CONNECT_DEVICE = 4;
 	public static final int GATT_CONNECTED = 5;
-	public static final int GATT_DISCONNECTED = 5;
-	public static final int GATT_SERVICES_DISCOVERED = 6;
-	public static final int STATUS_NOTIFIED = 7;
-	public static final int LONG_STATUS_NOTIFIED = 8;
-
+	public static final int GATT_DISCONNECTED = 6;
+	public static final int GATT_FAILED = 7;
+	public static final int GATT_SERVICES_DISCOVERED = 8;
+	public static final int STATUS_NOTIFIED = 9;
+	public static final int LONG_STATUS_NOTIFIED = 10;
+	public static final int VENDOR_ID_READ = 11;
+	public static final int DEVICE_ID_READ = 12;
 
 	private static int RSSI = -90;
 	
@@ -46,6 +51,10 @@ public class OnboardingActivity extends FragmentActivity {
 	private OnboardingFragment mScanningFragment;
 	
 	private BleProvisioner mBleProvisioner;
+	private WifiManager mWifiManager;
+	
+	private WiFiNetwork mNetwork;
+	protected int mRetryCount;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,6 +68,7 @@ public class OnboardingActivity extends FragmentActivity {
                 switch (inputMessage.what) {
                 
                 case START_SCANNING:
+                	mRetryCount = 0;
                 	mBleProvisioner.startScanLeDevices(OnboardingGattService.SERVICE_UUID, RSSI);
                 	break;
                 case STOP_SCANNING:
@@ -68,19 +78,48 @@ public class OnboardingActivity extends FragmentActivity {
                 	mScanningFragment.detectedDevice();
                 	break;
                 case CONNECT_DEVICE:
-                	mBleProvisioner.connectToDevice();
+                	mBleProvisioner.connectGatt();
                 	break;
                 case GATT_CONNECTED:
                 	// TODO Maybe discoverServices should be called from here instead of doing it
                 	// directly on the Ble Provisioner
                 	Toast.makeText(getApplicationContext(), "GATT CONNECTED", Toast.LENGTH_SHORT).show();
                 	break;
+                case GATT_DISCONNECTED:
+                	Toast.makeText(getApplicationContext(), "GATT DISCONNECTED", Toast.LENGTH_SHORT).show();
+                	break;
+                case GATT_FAILED:
+                	if (mRetryCount < 5) {
+                		Toast.makeText(getApplicationContext(), "RETRYING GATT connection", Toast.LENGTH_SHORT).show();
+                		mBleProvisioner.connectGatt();
+                		mRetryCount++;
+                	} else {
+                		Toast.makeText(getApplicationContext(), "Giving up retrying GATT connection", Toast.LENGTH_SHORT).show();
+                	}
+                	break;
                 case GATT_SERVICES_DISCOVERED:
                 	Toast.makeText(getApplicationContext(), "SERVICES DISCOVERED", Toast.LENGTH_SHORT).show();
                 	mBleProvisioner.setCharacteristicNotification(OnboardingGattService.CHARACTERISTIC_STATUS, true);
                 	mBleProvisioner.setCharacteristicNotification(OnboardingGattService.CHARACTERISTIC_LONG_STATUS, true);
-                	mBleProvisioner.writeCharacteristic(OnboardingGattService.CHARACTERISTIC_SSID, "cozyguest");
-                	mBleProvisioner.writeCharacteristic(OnboardingGattService.CHARACTERISTIC_AUTH, "OPEN");
+                	
+                	// Once services are discovered read VendorID and DeviceID
+                	mBleProvisioner.readCharacteristic(OnboardingGattService.CHARACTERISTIC_VENDOR_ID);
+                	mBleProvisioner.readCharacteristic(OnboardingGattService.CHARACTERISTIC_DEVICE_ID);
+
+                	break;
+                case VENDOR_ID_READ:
+                	mScanningFragment.setVendorId((String) inputMessage.obj);
+                	break;
+                case DEVICE_ID_READ:
+                	mScanningFragment.setDeviceId((String) inputMessage.obj);
+                	
+                	// At this point we can execute all necessary writes for onboarding
+                	mBleProvisioner.writeCharacteristic(OnboardingGattService.CHARACTERISTIC_SSID, mNetwork.SSID);
+                	mBleProvisioner.writeCharacteristic(OnboardingGattService.CHARACTERISTIC_AUTH, mNetwork.authentication);
+                	if (!mNetwork.authentication.equals("OPEN"))
+                		mBleProvisioner.writeCharacteristic(OnboardingGattService.CHARACTERISTIC_PASS, mNetwork.password);
+                	else 
+                		mBleProvisioner.writeCharacteristic(OnboardingGattService.CHARACTERISTIC_PASS, "");
                 	byte[] ba = new byte[1];
                 	ba[0] = 0x01;
                 	mBleProvisioner.writeCharacteristic(OnboardingGattService.CHARACTERISTIC_COMMAND, ba);
@@ -104,29 +143,69 @@ public class OnboardingActivity extends FragmentActivity {
         mPager = (ViewPager)findViewById(R.id.pager);
         mPager.setAdapter(mAdapter);
 
-        WiFiNetwork wifi = readWiFiNetwork();
+    	mWifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+    	WifiInfo info = mWifiManager.getConnectionInfo();
+    	
+        if (info == null) {
+        	Toast.makeText(getApplicationContext(), "Not connected to any wifi", Toast.LENGTH_SHORT).show();
+        	finish();
+        	return;
+        }
         
-        if (wifi == null)
-        	Toast.makeText(getApplicationContext(), "WIFI IS NOT SET CORRECTLY", Toast.LENGTH_SHORT).show();
+        mNetwork = readWiFiNetwork();
+        
+        if (mNetwork == null) { 
+        	// TODO THIS SHOULD BE A DIALOG
+        	Toast.makeText(getApplicationContext(), "Not connected through onboarding setup", Toast.LENGTH_SHORT).show();
+        	finish();
+        	return;
+        }
+        
+        if (info.getNetworkId() != mNetwork.networkId) {
+        	// TODO THIS SHOULD BE A DIALOG
+        	Toast.makeText(getApplicationContext(), "Connected to wrong wifi, run onboarding setup", Toast.LENGTH_SHORT).show();
+        	finish();
+        	return;
+        }
         
         mBleProvisioner = new BleProvisioner(getApplicationContext(), mHandler);
-        mBleProvisioner.init();
+        mBleProvisioner.resume();
+    }
+    
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        // Ensures Bluetooth is enabled on the device
+        if (!mBleProvisioner.isEnabled()) {
+           mBleProvisioner.init();
+        }
+        mBleProvisioner.resume();
+    }
+    
+    @Override
+    protected void onPause() {
+        super.onPause();
+        mBleProvisioner.pause();
     }
     
 	private WiFiNetwork readWiFiNetwork() {
 		 SharedPreferences prefs = getSharedPreferences("wifi_network",
 				  MODE_PRIVATE); 
 		 String SSID = prefs.getString("SSID", null);
-		 String authentication = prefs.getString("SSID", null);
-		 String password = prefs.getString("SSID", null);
+		 String authentication = prefs.getString("authentication", null);
+		 String password = prefs.getString("password", null);
+		 int networkId = prefs.getInt("networkId", -1);
 		 
-		 if (SSID == null || authentication == null)
+		 if (SSID == null || authentication == null || networkId == -1)
 			 return null;
 		 
 		 if (!authentication.equals("OPEN") && password == null)
 			 return null;
 		 
-		 return new WiFiNetwork(SSID, authentication, password);
+		 WiFiNetwork w = new WiFiNetwork(SSID, authentication, password);
+		 w.networkId = networkId;
+		 return w;
 	}
 
     public class MyAdapter extends FragmentPagerAdapter {
@@ -159,5 +238,4 @@ public class OnboardingActivity extends FragmentActivity {
         	return null;
         }
     }
-
 }
