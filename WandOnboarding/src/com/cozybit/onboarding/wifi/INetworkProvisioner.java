@@ -19,6 +19,8 @@ public interface INetworkProvisioner {
 
 	public WifiConfiguration getWifiConfiguration();
 	
+	public void unregisterBroadcastReceiver();
+	
 	public void releaseWifiConfiguration();
 	
 	public void requestScan();
@@ -40,6 +42,12 @@ public interface INetworkProvisioner {
 		public void onFailed();
 
 	}
+
+	public void registerBroadcastReceiver();
+
+
+
+
 
 
 

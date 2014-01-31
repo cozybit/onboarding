@@ -29,7 +29,7 @@ public class WiFiNetworkProvisioner implements INetworkProvisioner {
 	private Handler mHandler;
 	private Context mContext;
 	private WifiManager mWifiManager;
-	private int mNetworkId = -1;
+	//private int mNetworkId = -1;
 	private int mOldNetworkId;
 
 	private int mAuthCounter = 0;
@@ -96,13 +96,15 @@ public class WiFiNetworkProvisioner implements INetworkProvisioner {
 		}
 
 		protected void handleScanResultsAvailableAction() {
-	
+			
 			if (mState != State.SCANNING &&
 					mState != State.CONNECTING) {
 				Log.w(TAG, "Ignoring handleScanResultsAvailableAction() on " + mState + " state");
 				return;
 			}
-
+			
+			
+			
 			// Here we should return the list of stations to the UI
 			List<ScanResult> wifiList = mWifiManager.getScanResults();
 			
@@ -118,7 +120,8 @@ public class WiFiNetworkProvisioner implements INetworkProvisioner {
 					mProvisionerListener.onConnecting();
 					mOldNetworkId = mWifiManager.getConnectionInfo().getNetworkId();
 					if (mWifiManager.enableNetwork(networkId, true)) {
-						mNetworkId = networkId;
+						//mNetworkId = networkId;
+						mWiFiNetwork.networkId = networkId;
 						Log.d(TAG, "Enabled client ProximityNetwork configuration");
 					} else {
 						mState = State.FAILED;
@@ -219,8 +222,6 @@ public class WiFiNetworkProvisioner implements INetworkProvisioner {
 			return false;
 		}
 		
-		registerReceiver();
-
 		// If Wifi AP mode is ON disable it
 		if (isWifiApEnabled()) {
 			setWifiApEnabled(null, false);
@@ -230,7 +231,11 @@ public class WiFiNetworkProvisioner implements INetworkProvisioner {
 			mWifiManager.setWifiEnabled(true);
 		}
 		
+		mWifiManager.disconnect();
+		
+		registerBroadcastReceiver();
 		mState = State.INITIALIZED;
+		
 		return true;
 	}
 	
@@ -273,22 +278,13 @@ public class WiFiNetworkProvisioner implements INetworkProvisioner {
 	public void releaseWifiConfiguration() {
 		disableWifi();
 		mConfiguration = null;
-
 	}
 
-	public void registerReceiver() {
-		IntentFilter intentFilter = new IntentFilter();
-		intentFilter.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION);
-		intentFilter.addAction(WifiManager.SUPPLICANT_STATE_CHANGED_ACTION);
-		intentFilter.addAction(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION);
-		intentFilter.addAction(WifiManager.WIFI_STATE_CHANGED_ACTION);
-		mContext.registerReceiver(mClientReceiver, intentFilter, null, mHandler);
-	}
+
 	
 	private void disableWifi() {
 
-		if (mState != State.DISABLED)
-			mContext.unregisterReceiver(mClientReceiver);
+		unregisterBroadcastReceiver();
 
 		releaseConfiguration();
 
@@ -297,11 +293,11 @@ public class WiFiNetworkProvisioner implements INetworkProvisioner {
 	}
 
 	private void releaseConfiguration() {
-		if (mNetworkId != -1) {
-			mWifiManager.disableNetwork(mNetworkId);
-			mWifiManager.removeNetwork(mNetworkId);
+		if (mWiFiNetwork != null && mWiFiNetwork.networkId != -1) {
+			mWifiManager.disableNetwork(mWiFiNetwork.networkId);
+			mWifiManager.removeNetwork(mWiFiNetwork.networkId);
 			mWifiManager.enableNetwork(mOldNetworkId, true);
-			mNetworkId = -1;
+			mWiFiNetwork = null;
 			mOldNetworkId = -1;
 		}
 	}
@@ -363,7 +359,6 @@ public class WiFiNetworkProvisioner implements INetworkProvisioner {
 			return;
 		
 		mWifiManager.startScan();
-
 		// Check after 3 seconds for the scan result
 		mHandler.postDelayed(new Runnable() {
 			@Override
@@ -380,6 +375,7 @@ public class WiFiNetworkProvisioner implements INetworkProvisioner {
 		if (mState == State.CONNECTED && mWiFiNetwork != null && 
 			mWiFiNetwork.isSameConfig(SSID, encryption, password)) {
 			// Then ignore this as we're already connected to that network
+			mProvisionerListener.onConnected(mWiFiNetwork);
 			return true;
 		}
 		
@@ -424,6 +420,28 @@ public class WiFiNetworkProvisioner implements INetworkProvisioner {
 			return mWiFiNetwork;
 		}
 		return null;
+	}
+
+	@Override
+	public void unregisterBroadcastReceiver() {
+		if (mState != State.DISABLED) {
+			mContext.unregisterReceiver(mClientReceiver);
+			mState = State.DISABLED;
+		}
+	}
+
+	@Override
+	public void registerBroadcastReceiver() {
+		
+		if (mState == State.DISABLED) {
+			IntentFilter intentFilter = new IntentFilter();
+			intentFilter.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION);
+			intentFilter.addAction(WifiManager.SUPPLICANT_STATE_CHANGED_ACTION);
+			intentFilter.addAction(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION);
+			intentFilter.addAction(WifiManager.WIFI_STATE_CHANGED_ACTION);
+			mContext.registerReceiver(mClientReceiver, intentFilter, null, mHandler);
+			mState = State.INITIALIZED;
+		}
 	}
 	
 }

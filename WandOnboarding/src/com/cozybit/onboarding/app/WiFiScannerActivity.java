@@ -155,6 +155,7 @@ public class WiFiScannerActivity extends Activity {
 			public void onConnected(WiFiNetwork wifiNetwork) {
 				Toast.makeText(getBaseContext(), "Connected", Toast.LENGTH_SHORT).show();
 				storeWiFiNetwork(wifiNetwork);
+				finish();
 			}
 
 			@Override
@@ -190,6 +191,7 @@ public class WiFiScannerActivity extends Activity {
 	protected void onDestroy() 
 	{
 		//mProvisioner.releaseWifiConfiguration();
+		mProvisioner.unregisterBroadcastReceiver();
 		super.onDestroy();
 	}
 	
@@ -197,12 +199,16 @@ public class WiFiScannerActivity extends Activity {
 	protected void onPause()
 	{
 		super.onPause();
+		mProvisioner.unregisterBroadcastReceiver();
+
 	}
 
 	@Override
 	protected void onResume()
 	{
 		super.onResume();
+		mProvisioner.registerBroadcastReceiver();
+		mProvisioner.requestScan();
 	}
 
 	private Map<String, String> putData(String ssid, String encryption) {
@@ -244,6 +250,7 @@ public class WiFiScannerActivity extends Activity {
 		editor.putString("SSID", wifiNetwork.SSID);
 		editor.putString("authentication", wifiNetwork.authentication);
 		editor.putString("password", wifiNetwork.password);
+		editor.putInt("networkId", wifiNetwork.networkId);
 		editor.commit();
 	}
 	

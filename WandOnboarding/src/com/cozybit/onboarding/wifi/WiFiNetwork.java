@@ -3,6 +3,7 @@ package com.cozybit.onboarding.wifi;
 /* Small inner class to Store and transfer WiFiNetwork without all other clutter */
 public class WiFiNetwork {
 
+	public int networkId = -1;
 	public String SSID;
 	public String authentication;
 	public String password;
