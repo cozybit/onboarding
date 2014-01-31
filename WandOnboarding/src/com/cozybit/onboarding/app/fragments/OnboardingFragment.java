@@ -1,15 +1,21 @@
 package com.cozybit.onboarding.app.fragments;
 
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.Fragment;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.ViewFlipper;
 
@@ -25,7 +31,11 @@ public class OnboardingFragment extends Fragment {
 	private EditText mStatus;
 	private EditText mLongStatus;
 	private Animation mAnimationFadeIn;
+	private Button mButton;
 	
+	private String mVendorId;
+	private String mDeviceId;
+		
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -41,16 +51,48 @@ public class OnboardingFragment extends Fragment {
 		       
         //Getting View Flipper from main.xml and assigning to flipper reference variable
         mFlipper = (ViewFlipper)v.findViewById(R.id.viewFlipper1);
+        addImageViewsToFlipper();
+        
         mTextView = (TextView)v.findViewById(R.id.textView);
         mTextView2 = (TextView)v.findViewById(R.id.textView2);
         
         mStatus = (EditText)v.findViewById(R.id.status_edittext);
         mLongStatus = (EditText)v.findViewById(R.id.longstatus_edittext);
+        mButton = (Button)v.findViewById(R.id.show_device_web);
+        
+        mButton.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				openWebURL();
+			}
+		});
 
         return v;
     }
 
-    @Override
+    private void addImageViewsToFlipper() {
+    	// List of Images
+    	int gallery_grid_Images[]= {R.drawable.blender, R.drawable.coffee, 
+    			R.drawable.dishwasher, R.drawable.dvd, R.drawable.fan, 
+    			R.drawable.fridge, R.drawable.mixer, R.drawable.oven,
+    			R.drawable.radio, R.drawable.stereo, R.drawable.toaster
+    	};
+
+    	ViewGroup.LayoutParams params = new FrameLayout.LayoutParams(
+    			FrameLayout.LayoutParams.WRAP_CONTENT,
+    			FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.CENTER);
+    	
+    	// Create views and add it, last one will be our toaster
+    	for (int res : gallery_grid_Images) {
+    		 ImageView image = new ImageView(getActivity().getApplicationContext());
+    		 image.setBackgroundResource(res);
+    		 image.setLayoutParams(params);
+    		 mFlipper.addView(image);
+		}
+	}
+
+	@Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
     }
@@ -63,18 +105,18 @@ public class OnboardingFragment extends Fragment {
         	startFlipping();
         } else {
         	mHandler.sendEmptyMessage(OnboardingActivity.STOP_SCANNING);
-        	stopFlipping();
+        	resetUI();
         }
     }
     
 	private void startFlipping() {
-		mFlipper.setFlipInterval(500);	//setting the interval 500 milliseconds
+		mFlipper.setFlipInterval(300);	//setting the interval 500 milliseconds
 		mFlipper.setInAnimation(AnimationUtils.loadAnimation(getActivity(),
 								android.R.anim.fade_in));
         mFlipper.startFlipping();    //views flipping starts.
 	}
     
-    private void stopFlipping() {
+    private void resetUI() {
 		if (mFlipper != null)
 			mFlipper.stopFlipping();
 		if (mTextView != null)
@@ -91,7 +133,7 @@ public class OnboardingFragment extends Fragment {
 
 	public void detectedDevice() {
 		mFlipper.stopFlipping();
-		mFlipper.setDisplayedChild(0);
+		mFlipper.setDisplayedChild(mFlipper.getChildCount()-1);
 		mTextView.startAnimation(mAnimationFadeIn);
 		mTextView.setText(R.string.detected);
         mTextView2.setAnimation(AnimationUtils.loadAnimation(getActivity().getApplicationContext(),
@@ -106,10 +148,28 @@ public class OnboardingFragment extends Fragment {
 	}
 
 	public void updateStatus(String status) {
+		if (status.equals("CONNECTED")) {
+			mButton.setVisibility(Button.VISIBLE);
+		}
 		mStatus.setText(status);
 	}
 
 	public void updateLongStatus(String longStatus) {
 		mLongStatus.setText(longStatus);
 	}
+	
+	public void openWebURL() {
+		String url = "https://cozyonboard.appspot.com/status/" + mDeviceId + "/"+ mVendorId;
+	    Intent browse = new Intent(Intent.ACTION_VIEW , Uri.parse(url));
+	    startActivity(browse);
+	}
+
+	public void setVendorId(String vendorId) {
+		mVendorId = vendorId;
+	}
+
+	public void setDeviceId(String deviceId) {
+		mDeviceId = deviceId;
+	}
+	
 }

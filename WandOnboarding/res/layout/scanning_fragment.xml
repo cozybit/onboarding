@@ -6,76 +6,10 @@
 
 
 <!-- ViewFlipper can contains any view elements in this case it contains 5 ImageView view Component with different Images-->
-    <ViewFlipper
-        android:id="@+id/viewFlipper1"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-         >
-
-        <ImageView
-            android:id="@+id/imageView1"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical|center_horizontal"
-            android:src="@drawable/toaster" /><!-- Setting img1 from drawable folder in ImageView -->
-
-        <ImageView
-
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical|center_horizontal"
-            android:src="@drawable/tv" /><!-- Setting img1 from drawable folder in ImageView -->
-        
-
-        <ImageView
-
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical|center_horizontal"
-            android:src="@drawable/stereo" /><!-- Setting img1 from drawable folder in ImageView -->
-        <ImageView
-
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical|center_horizontal"
-            android:src="@drawable/vacuum" /><!-- Setting img1 from drawable folder in ImageView -->
-        <ImageView
-
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical|center_horizontal"
-            android:src="@drawable/washer" /><!-- Setting img1 from drawable folder in ImageView -->
-        <ImageView
-
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical|center_horizontal"
-            android:src="@drawable/mixer" /><!-- Setting img1 from drawable folder in ImageView -->
-        <ImageView
-
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical|center_horizontal"
-            android:src="@drawable/fridge" /><!-- Setting img1 from drawable folder in ImageView -->
-        <ImageView
-
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical|center_horizontal"
-            android:src="@drawable/blender" /><!-- Setting img1 from drawable folder in ImageView -->
-        <ImageView
-
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical|center_horizontal"
-            android:src="@drawable/dvd" /><!-- Setting img1 from drawable folder in ImageView -->
-        <ImageView
-
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical|center_horizontal"
-            android:src="@drawable/fan" /><!-- Setting img1 from drawable folder in ImageView -->
-    </ViewFlipper>
+  <ViewFlipper
+      android:id="@+id/viewFlipper1"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content" />      
     
   <LinearLayout
     android:id="@+id/linearLayout1"
@@ -148,6 +82,11 @@
 
     </LinearLayout>
 
-
+  <Button
+      android:id="@+id/show_device_web"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:text="GO TO URL"
+      android:visibility="invisible" />
 
 </LinearLayout>
