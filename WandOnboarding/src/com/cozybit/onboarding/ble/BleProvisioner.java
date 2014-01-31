@@ -61,6 +61,7 @@ public class BleProvisioner {
                 Log.i(TAG, "Connected to GATT server.");
                 mHandler.sendEmptyMessage(OnboardingActivity.GATT_CONNECTED);
    
+                // TODO Move this to the activity!!!
                 // Attempts to discover services after successful connection.
                 Log.i(TAG, "Attempting to start service discovery:" +
                         mBluetoothGatt.discoverServices());
