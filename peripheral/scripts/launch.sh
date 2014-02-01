@@ -3,7 +3,14 @@
 D=$(dirname $(readlink -f ${BASH_SOURCE}))
 source $D/library.sh
 
-ONBOARD_WLAN_DEVICE=$(get_wlan)
+while true; do
+	ONBOARD_WLAN_DEVICE=$(get_wlan)
+	if echo $ONBOARD_WLAN_DEVICE | grep -q '^wlan.*$'; then
+		break;
+	fi
+	sleep 0.5
+done
+
 ONBOARD_DEVICE_ID=$(get_dev_id)
 ONBOARD_VENDOR_ID="toastmaster"
 

@@ -9,7 +9,7 @@ var args = [process.env.ONBOARD_WLAN_DEVICE, '-v'];
 
 var Dhcp_cli = function() {
 	this._dhcpcli;
-	debug('dhcp_cli = ' + this._dhcpclient);
+	console.log("wlan device: " + process.env.ONBOARD_WLAN_DEVICE);
 }
 
 util.inherits(Dhcp_cli, events.EventEmitter);
@@ -39,6 +39,7 @@ Dhcp_cli.prototype.onStderrData = function(data) {
 Dhcp_cli.prototype.getIp = function() {
   	this._buffer = "";
 	this._dhcpcli = spawn(command, args);
+	debug('dhcp_cli = ' + this._dhcpcli);
 	this._dhcpcli.stderr.on('data', this.onStderrData.bind(this));
 	this._dhcpcli.stdout.on('data', this.onStdoutData.bind(this));
 }
