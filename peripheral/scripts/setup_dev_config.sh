@@ -1,7 +1,12 @@
 #!/bin/bash
 
 D=$(dirname $(readlink -f ${BASH_SOURCE}))
+source $D/library.sh
+
 CFG=$(readlink -f $D/../device_config)
+
+DEVICE_NUMBER=$1
+[[ -n $DEVICE_NUMBER ]] || die "Usage: setup_device_config.sh <device_number>"
 
 source $D/library.sh
 
@@ -28,7 +33,7 @@ echo; cd /etc/network; pwd
 ls -l interfaces
 backup_or_rm_symlink interfaces
 
-ln -f -s -v $CFG/interfaces.dev1 interfaces
+ln -f -s -v $CFG/interfaces.dev$DEVICE_NUMBER interfaces
 
 echo
 
