@@ -7,6 +7,9 @@ import android.os.Handler;
 import android.support.v4.app.Fragment;
 import android.view.Gravity;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
@@ -39,6 +42,7 @@ public class OnboardingFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        this.setHasOptionsMenu(true);
     }
     
     @Override
@@ -108,6 +112,32 @@ public class OnboardingFragment extends Fragment {
         	resetUI();
         }
     }
+       
+    MenuItem disc_menu_opt;
+    MenuItem reset_menu_opt;
+    
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+    	inflater.inflate(R.menu.menu, menu);
+    	disc_menu_opt = menu.findItem(R.id.disconnect_option);
+    	reset_menu_opt = menu.findItem(R.id.reset_option);
+        super.onCreateOptionsMenu(menu, inflater);
+    }
+    
+    @Override
+    public boolean onOptionsItemSelected (MenuItem item) {
+
+    	switch( item.getItemId() ) {
+    		case R.id.disconnect_option:
+    			mHandler.sendEmptyMessage(OnboardingActivity.DISCONNECT_TARGET);
+    			break;
+    		case R.id.reset_option:
+    			mHandler.sendEmptyMessage(OnboardingActivity.RESET_TARGET);
+    			break;
+    	}
+
+    	return super.onContextItemSelected(item);
+    }
     
 	private void startFlipping() {
 		mFlipper.setFlipInterval(300);	//setting the interval 500 milliseconds
@@ -150,6 +180,11 @@ public class OnboardingFragment extends Fragment {
 	public void updateStatus(String status) {
 		if (status.equals("CONNECTED")) {
 			mButton.setVisibility(Button.VISIBLE);
+			disc_menu_opt.setVisible(true);
+			reset_menu_opt.setVisible(true);
+		} else {
+			disc_menu_opt.setVisible(false);
+			reset_menu_opt.setVisible(false);
 		}
 		mStatus.setText(status);
 	}

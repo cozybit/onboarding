@@ -60,12 +60,7 @@ public class BleProvisioner {
                 mState = State.CONNECTED;
                 Log.i(TAG, "Connected to GATT server.");
                 mHandler.sendEmptyMessage(OnboardingActivity.GATT_CONNECTED);
-   
-                // TODO Move this to the activity!!!
-                // Attempts to discover services after successful connection.
-                Log.i(TAG, "Attempting to start service discovery:" +
-                        mBluetoothGatt.discoverServices());
-                
+          
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
             	if (mState == State.DISCONNECTING) {
             		mState = State.DISCONNECTED;
@@ -472,5 +467,18 @@ public class BleProvisioner {
 			}
 			mSavedState = null;
 		}
+	}
+
+	public boolean discoverServices() {
+		if (mBluetoothAdapter == null || mDevice == null) {
+			Log.w(TAG, "BluetoothAdapter not initialized or undetected device.");
+			return false;
+		}
+		
+		if (mBluetoothGatt != null) {
+			mBluetoothGatt.discoverServices();
+			return true;
+		}
+		return false;
 	}
 }

@@ -40,9 +40,11 @@ public class OnboardingActivity extends FragmentActivity {
 	public static final int LONG_STATUS_NOTIFIED = 10;
 	public static final int VENDOR_ID_READ = 11;
 	public static final int DEVICE_ID_READ = 12;
+	public static final int DISCONNECT_TARGET = 13;
+	public static final int RESET_TARGET = 14;
 
 	private static int RSSI = -30;
-	
+
 	private Handler mHandler;
 	private MyAdapter mAdapter;
     private ViewPager mPager;
@@ -84,6 +86,7 @@ public class OnboardingActivity extends FragmentActivity {
                 	// TODO Maybe discoverServices should be called from here instead of doing it
                 	// directly on the Ble Provisioner
                 	Toast.makeText(getApplicationContext(), "GATT CONNECTED", Toast.LENGTH_SHORT).show();
+                    mBleProvisioner.discoverServices();
                 	break;
                 case GATT_DISCONNECTED:
                 	Toast.makeText(getApplicationContext(), "GATT DISCONNECTED", Toast.LENGTH_SHORT).show();
@@ -131,6 +134,12 @@ public class OnboardingActivity extends FragmentActivity {
                 case LONG_STATUS_NOTIFIED:
                 	String longStatus = (String) inputMessage.obj;
                 	mScanningFragment.updateLongStatus(longStatus);
+                	break;
+                case DISCONNECT_TARGET:
+                	mBleProvisioner.writeCharacteristic(OnboardingGattService.CHARACTERISTIC_COMMAND, new byte[] { 0x02 } );
+                	break;
+                case RESET_TARGET:
+                	mBleProvisioner.writeCharacteristic(OnboardingGattService.CHARACTERISTIC_COMMAND, new byte[] { 0x03 } );
                 	break;
                 default:
                 	super.handleMessage(inputMessage);

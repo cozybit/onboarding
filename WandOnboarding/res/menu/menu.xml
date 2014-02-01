@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+    <item android:id="@+id/disconnect_option"
+          android:title="Disconnect"
+          android:titleCondensed="Disconnect"
+          android:visible="false"
+          android:enabled="true"/>
+    <item android:id="@+id/reset_option"
+          android:title="Reset"
+          android:titleCondensed="Reset"
+          android:visible="false"
+          android:enabled="true"/>
+</menu>
