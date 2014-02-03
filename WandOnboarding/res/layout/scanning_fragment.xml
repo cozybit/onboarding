@@ -80,10 +80,27 @@
               
   		  </LinearLayout>
         
+        <LinearLayout
+            android:id="@+id/progressLayout"
+            android:layout_width="wrap_content"
+      		android:layout_height="wrap_content"
+      		android:layout_gravity="center_horizontal"
+      		android:visibility="invisible"
+            android:orientation="horizontal">
+            <ProgressBar
+                 android:layout_width="wrap_content"
+                 android:layout_height="wrap_content"
+                 android:layout_marginRight="5dp" />
+            <TextView
+                 android:layout_width="wrap_content"
+                 android:layout_height="wrap_content"
+                 android:layout_gravity="center"
+                 android:text="Wait while it connects..." />
+        </LinearLayout>
 
     </LinearLayout>
 
-  <Button
+    <Button
       android:id="@+id/show_device_web"
       android:layout_width="wrap_content"
       android:layout_height="wrap_content"

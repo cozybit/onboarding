@@ -29,6 +29,7 @@ import com.cozybit.onboarding.app.OnboardingActivity;
 public class OnboardingFragment extends Fragment {
 
 	private LinearLayout mRootLayout;
+	private LinearLayout mProgressLayout;
 	private ViewFlipper mFlipper;
 	private Handler mHandler;
 	private TextView mTextView;
@@ -53,6 +54,7 @@ public class OnboardingFragment extends Fragment {
         View v = inflater.inflate(R.layout.scanning_fragment, container, false);
 
         mRootLayout = (LinearLayout) v.findViewById(R.id.rootLayout);
+        mProgressLayout = (LinearLayout) v.findViewById(R.id.progressLayout);
 
         mAnimationFadeIn = AnimationUtils.loadAnimation(getActivity().getApplicationContext(),
 				android.R.anim.fade_in);
@@ -177,6 +179,9 @@ public class OnboardingFragment extends Fragment {
 			@Override
 			public void onClick(View arg0) {
 				mHandler.sendEmptyMessage(OnboardingActivity.CONNECT_DEVICE);
+				mProgressLayout.setVisibility(View.VISIBLE);
+				mTextView2.setAnimation(null);
+				mTextView2.setVisibility(View.INVISIBLE);
 			}
 		});
 	}
@@ -186,6 +191,7 @@ public class OnboardingFragment extends Fragment {
 			mButton.setVisibility(Button.VISIBLE);
 			disc_menu_opt.setVisible(true);
 			reset_menu_opt.setVisible(true);
+			mProgressLayout.setVisibility(View.INVISIBLE);
 		} else {
 			disc_menu_opt.setVisible(false);
 			reset_menu_opt.setVisible(false);
