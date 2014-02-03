@@ -19,6 +19,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.ViewFlipper;
 
@@ -26,7 +27,8 @@ import com.cozybit.onboarding.R;
 import com.cozybit.onboarding.app.OnboardingActivity;
 
 public class OnboardingFragment extends Fragment {
-		
+
+	private LinearLayout mRootLayout;
 	private ViewFlipper mFlipper;
 	private Handler mHandler;
 	private TextView mTextView;
@@ -49,6 +51,8 @@ public class OnboardingFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
             Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.scanning_fragment, container, false);
+
+        mRootLayout = (LinearLayout) v.findViewById(R.id.rootLayout);
 
         mAnimationFadeIn = AnimationUtils.loadAnimation(getActivity().getApplicationContext(),
 				android.R.anim.fade_in);
@@ -168,8 +172,8 @@ public class OnboardingFragment extends Fragment {
 		mTextView.setText(R.string.detected);
         mTextView2.setAnimation(AnimationUtils.loadAnimation(getActivity().getApplicationContext(),
 				R.anim.fade_in_out));
-        mTextView2.setOnClickListener(new OnClickListener() {
-			
+
+        mRootLayout.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View arg0) {
 				mHandler.sendEmptyMessage(OnboardingActivity.CONNECT_DEVICE);
