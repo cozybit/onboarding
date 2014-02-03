@@ -31,6 +31,7 @@ public class OnboardingFragment extends Fragment {
 	private LinearLayout mRootLayout;
 	private LinearLayout mProgressLayout;
 	private ViewFlipper mFlipper;
+	private ImageView mDetectedDevImg;
 	private Handler mHandler;
 	private TextView mTextView;
 	private TextView mTextView2;
@@ -62,6 +63,8 @@ public class OnboardingFragment extends Fragment {
         //Getting View Flipper from main.xml and assigning to flipper reference variable
         mFlipper = (ViewFlipper)v.findViewById(R.id.viewFlipper1);
         addImageViewsToFlipper();
+        
+        mDetectedDevImg = (ImageView) v.findViewById(R.id.detectedDev);
         
         mTextView = (TextView)v.findViewById(R.id.textView);
         mTextView2 = (TextView)v.findViewById(R.id.textView2);
@@ -112,6 +115,8 @@ public class OnboardingFragment extends Fragment {
         super.setUserVisibleHint(isVisibleToUser);
         if (isVisibleToUser) {
         	mHandler.sendEmptyMessage(OnboardingActivity.START_SCANNING);
+        	mDetectedDevImg.setVisibility(View.GONE);
+        	mFlipper.setVisibility(View.VISIBLE);
         	startFlipping();
         } else {
         	mHandler.sendEmptyMessage(OnboardingActivity.STOP_SCANNING);
@@ -153,8 +158,12 @@ public class OnboardingFragment extends Fragment {
 	}
     
     private void resetUI() {
-		if (mFlipper != null)
+		if (mFlipper != null) {
 			mFlipper.stopFlipping();
+			mFlipper.setVisibility(View.VISIBLE);
+		}
+		if (mDetectedDevImg != null )
+			mDetectedDevImg.setVisibility(View.GONE);
 		if (mTextView != null)
 			mTextView.setText(R.string.identifying);
 		if (mTextView2 != null) {
@@ -169,7 +178,8 @@ public class OnboardingFragment extends Fragment {
 
 	public void detectedDevice() {
 		mFlipper.stopFlipping();
-		mFlipper.setDisplayedChild(mFlipper.getChildCount()-1);
+		mFlipper.setVisibility(View.GONE);
+		mDetectedDevImg.setVisibility(View.VISIBLE);		
 		mTextView.startAnimation(mAnimationFadeIn);
 		mTextView.setText(R.string.detected);
         mTextView2.setAnimation(AnimationUtils.loadAnimation(getActivity().getApplicationContext(),

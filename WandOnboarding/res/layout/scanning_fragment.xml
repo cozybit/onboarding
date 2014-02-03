@@ -10,7 +10,16 @@
   <ViewFlipper
       android:id="@+id/viewFlipper1"
       android:layout_width="match_parent"
-      android:layout_height="wrap_content" />      
+      android:layout_height="wrap_content"
+      android:visibility="visible"/>      
+  
+  <ImageView 
+      android:id="@+id/detectedDev"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_gravity="center"
+      android:src="@drawable/toasteroven"
+      android:visibility="gone" />
     
   <LinearLayout
     android:id="@+id/linearLayout1"
