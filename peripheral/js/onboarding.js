@@ -105,16 +105,23 @@ var statuses = {
 };
 
 var messages = {
-    NONE       : { id: 0, data: " " },
-    SET_SSID   : { id: 1, data: "Set SSID" },
-    SET_AUTH   : { id: 2, data: "Set authentication type"},
-    WRONG_AUTH : { id: 3, data: "Wrong authentication type selected" },
-    SET_PSK    : { id: 4, data: "Set passphrase" },
-    SET_CHAN   : { id: 5, data: "Set channel or issue CONNECT cmd" },
-    AUTHING    : { id: 6, data: "Authenticating"},
-    GETTING_IP : { id: 7, data: "Getting IP address"},
-    CONN_ESTAB : { id: 8, data: "Connection established"},
-    PSK_NOT_REQ: { id: 9, data: "Passphrase is not required for open network" },
+    NONE       : { id: 0, data: " "                   },
+    SET_SSID   : { id: 1, data: "Set SSID"            },
+    SET_AUTH   : { id: 2, data: "Set auth. type"      },
+    WRONG_AUTH : { id: 3, data: "Wrong auth. type"    },
+    SET_PSK    : { id: 4, data: "Set PSK"             },
+    SET_CHAN   : { id: 5, data: "Conn. or set channel"},
+    AUTHING    : { id: 6, data: "Authenticating"      },
+    GETTING_IP : { id: 7, data: "Getting IP address"  },
+    CONN_ESTAB : { id: 8, data: "Connection completed"},
+    PSK_NOT_REQ: { id: 9, data: "No PSK required"     },
+    //                                    11111111112
+    //                           12345678901234567890
+    //                           Message length ^^^^^
+    //
+    // TODO: Max packet length is 20 bytes, need to
+    //  figure out how tell the client that the prop
+    //  is longer than 20 bytes.
 }
 
 var theStatus = [statuses.DISCONNECTED];
