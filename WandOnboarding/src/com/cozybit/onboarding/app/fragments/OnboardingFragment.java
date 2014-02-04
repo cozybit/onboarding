@@ -199,7 +199,7 @@ public class OnboardingFragment extends Fragment {
 	public void updateStatus(String status) {
 		if (status.equals("CONNECTED")) {
 			mButton.setVisibility(Button.VISIBLE);
-			disc_menu_opt.setVisible(true);
+			disc_menu_opt.setVisible(false);
 			reset_menu_opt.setVisible(true);
 			mProgressLayout.setVisibility(View.INVISIBLE);
 		} else {
