@@ -43,7 +43,7 @@ public class OnboardingActivity extends FragmentActivity {
 	public static final int DISCONNECT_TARGET = 13;
 	public static final int RESET_TARGET = 14;
 
-	private static int RSSI = -30;
+	private static int RSSI = -35;
 
 	private Handler mHandler;
 	private MyAdapter mAdapter;
