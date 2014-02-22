@@ -153,7 +153,7 @@ public class OnboardingActivity extends FragmentActivity {
         mPager = (ViewPager)findViewById(R.id.pager);
         mPager.setAdapter(mAdapter);
 
-    	mWifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+    	/*mWifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
     	WifiInfo info = mWifiManager.getConnectionInfo();
     	
         if (info == null) {
@@ -177,7 +177,7 @@ public class OnboardingActivity extends FragmentActivity {
         	finish();
         	return;
         }
-        
+        */
         mBleProvisioner = new BleProvisioner(getApplicationContext(), mHandler);
         mBleProvisioner.resume();
     }
