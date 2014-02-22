@@ -246,15 +246,24 @@ public class BleProvisioner {
         
         UUID serviceUUID = UUID.randomUUID();
         UUID characteristicUUID = UUID.randomUUID();
+        UUID descriptorUUID = UUID.randomUUID();
+
         
         Log.d(TAG, "ServiceUUID: " + serviceUUID.toString());
         Log.d(TAG, "CharacteristicUUID: " + characteristicUUID.toString());
         
         BluetoothGattCharacteristic characteristic = new BluetoothGattCharacteristic(characteristicUUID, BluetoothGattCharacteristic.PROPERTY_READ, BluetoothGattCharacteristic.PERMISSION_READ);
-        characteristic.setValue("WORKS!");
+        characteristic.setValue(77, BluetoothGattCharacteristic.FORMAT_UINT8, 0);
         
+        BluetoothGattDescriptor descriptor = new BluetoothGattDescriptor(descriptorUUID, BluetoothGattDescriptor.PERMISSION_READ);
+        
+        characteristic.addDescriptor(descriptor);
+        
+                
         BluetoothGattService service = new BluetoothGattService(serviceUUID, BluetoothGattService.SERVICE_TYPE_PRIMARY);
         service.addCharacteristic(characteristic);
+        
+        
         
         gattServer.addService(service);
 
