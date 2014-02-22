@@ -71,7 +71,8 @@ public class OnboardingActivity extends FragmentActivity {
                 
                 case START_SCANNING:
                 	mRetryCount = 0;
-                	mBleProvisioner.startScanLeDevices(OnboardingGattService.SERVICE_UUID, RSSI);
+                	//mBleProvisioner.startScanLeDevices(OnboardingGattService.SERVICE_UUID, RSSI);
+                	mBleProvisioner.openGattServer();
                 	break;
                 case STOP_SCANNING:
                 	mBleProvisioner.stopScanLeDevices();

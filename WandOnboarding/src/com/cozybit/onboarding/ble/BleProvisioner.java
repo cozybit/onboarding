@@ -11,6 +11,8 @@ import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
+import android.bluetooth.BluetoothGattServer;
+import android.bluetooth.BluetoothGattServerCallback;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
@@ -191,6 +193,62 @@ public class BleProvisioner {
 		return false;
 	}
 */
+	
+	public void openGattServer() {
+        final BluetoothManager bluetoothManager =
+                (BluetoothManager) mContext.getSystemService(Context.BLUETOOTH_SERVICE);
+        
+        BluetoothGattServer gattServer = bluetoothManager.openGattServer(mContext, new BluetoothGattServerCallback() {
+        	
+        	/* TODO Here we should @Override any method we want to handle
+        	 * 
+        	 * from Android API:
+        	 * 
+        	 *  void 	onCharacteristicReadRequest(BluetoothDevice device, int requestId,
+        	 *  			int offset, BluetoothGattCharacteristic characteristic)
+        	 *  		A remote client has requested to read a local characteristic.
+        	 *  
+        	 *  void 	onCharacteristicWriteRequest(BluetoothDevice device, int requestId,
+        	 *  			BluetoothGattCharacteristic characteristic, boolean preparedWrite,
+        	 *  			boolean responseNeeded, int offset, byte[] value)
+        	 *  		A remote client has requested to write to a local characteristic.
+        	 *  
+        	 *  void 	onConnectionStateChange(BluetoothDevice device, int status, int newState)
+        	 * 			Callback indicating when a remote device has been connected or disconnected.
+        	 *  
+        	 *  void 	onDescriptorReadRequest(BluetoothDevice device, int requestId,
+        	 *  			int offset, BluetoothGattDescriptor descriptor)
+        	 *  		A remote client has requested to read a local descriptor.
+        	 *  
+        	 *  void 	onDescriptorWriteRequest(BluetoothDevice device, int requestId,
+        	 *  			BluetoothGattDescriptor descriptor, boolean preparedWrite,
+        	 *  			boolean responseNeeded, int offset, byte[] value)
+        	 *  		A remote client has requested to write to a local descriptor.
+        	 *  
+        	 *  void 	onExecuteWrite(BluetoothDevice device, int requestId, boolean execute)
+        	 *  		Execute all pending write operations for this device.
+        	 *  
+        	 *  void 	onServiceAdded(int status, BluetoothGattService service)
+        	 *  		Indicates whether a local service has been added successfully.
+        	 */
+        	@Override
+        	public void onCharacteristicReadRequest(BluetoothDevice device, int requestId,
+        			 int offset, BluetoothGattCharacteristic characteristic) {
+        		 Log.d(TAG, "onCharacteristicReadRequest" );
+        	}
+        	
+        	@Override
+        	public void onServiceAdded(int status, BluetoothGattService service) {
+       		 	Log.d(TAG, "onServiceAdded" );
+        	}
+        	
+		});
+                
+        gattServer.addService(new BluetoothGattService(UUID.randomUUID(), BluetoothGattService.SERVICE_TYPE_PRIMARY));
+        //gattServer.addService(new BluetoothGattService(UUID.randomUUID(), BluetoothGattService.SERVICE_TYPE_SECONDARY));
+
+	}
+	
 	
 	public void startScanLeDevices(UUID uuid, int rssiThreshold) {
 		mServiceUUID = uuid;
