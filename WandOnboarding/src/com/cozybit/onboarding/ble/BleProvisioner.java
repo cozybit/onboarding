@@ -243,9 +243,20 @@ public class BleProvisioner {
         	}
         	
 		});
-                
-        gattServer.addService(new BluetoothGattService(UUID.randomUUID(), BluetoothGattService.SERVICE_TYPE_PRIMARY));
-        //gattServer.addService(new BluetoothGattService(UUID.randomUUID(), BluetoothGattService.SERVICE_TYPE_SECONDARY));
+        
+        UUID serviceUUID = UUID.randomUUID();
+        UUID characteristicUUID = UUID.randomUUID();
+        
+        Log.d(TAG, "ServiceUUID: " + serviceUUID.toString());
+        Log.d(TAG, "CharacteristicUUID: " + characteristicUUID.toString());
+        
+        BluetoothGattCharacteristic characteristic = new BluetoothGattCharacteristic(characteristicUUID, BluetoothGattCharacteristic.PROPERTY_READ, BluetoothGattCharacteristic.PERMISSION_READ);
+        characteristic.setValue("WORKS!");
+        
+        BluetoothGattService service = new BluetoothGattService(serviceUUID, BluetoothGattService.SERVICE_TYPE_PRIMARY);
+        service.addCharacteristic(characteristic);
+        
+        gattServer.addService(service);
 
 	}
 	
