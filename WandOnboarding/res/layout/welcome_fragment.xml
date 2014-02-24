@@ -4,39 +4,25 @@
     android:layout_height="fill_parent"
     android:orientation="vertical">
     
-    <ImageView
-        android:id="@+id/welcome_img"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_vertical|center_horizontal"
-        android:contentDescription="@string/magic_wand"
-        android:layout_weight="0.40"
-        android:src="@drawable/wand" />
-    
     <TextView
         android:id="@+id/welcome_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_vertical|center_horizontal"
-        android:layout_weight="0.92"
-        android:text="@string/welcome"
+        android:gravity="center"
+        android:layout_weight="0.08"
+        android:text="Peripheral Mode"
+        android:textStyle="bold"
         android:textSize="20sp" />
     
     <TextView
-        android:id="@+id/welcome_swipe_text"
+        android:id="@+id/read_value"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_vertical|center_horizontal"
+        android:gravity="center"
         android:layout_weight="0.33"
-        android:text="@string/swipe_to_scan"
-        android:textSize="20sp" />
-    
-    <ImageView
-        android:id="@+id/arrowImage"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="top|center_horizontal"
-        android:layout_weight="1.06"
-        android:src="@drawable/arrow" />
+        android:text="0"
+        android:textSize="200sp" />
 
 </LinearLayout>

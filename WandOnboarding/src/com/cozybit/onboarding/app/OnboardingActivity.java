@@ -26,7 +26,7 @@ import com.cozybit.onboarding.wifi.WiFiNetwork;
 public class OnboardingActivity extends FragmentActivity {
 	
     private final static String TAG = OnboardingActivity.class.getSimpleName();
-	private int NUM_ITEMS = 2;
+	private int NUM_ITEMS = 1;
 	
 	public static final int START_SCANNING = 1;
 	public static final int STOP_SCANNING = 2;
@@ -72,6 +72,7 @@ public class OnboardingActivity extends FragmentActivity {
                 case START_SCANNING:
                 	mRetryCount = 0;
                 	//mBleProvisioner.startScanLeDevices(OnboardingGattService.SERVICE_UUID, RSSI);
+                	mBleProvisioner.setWelcomFragmentUiUpdater(mWelcomeFragment.getUiUpdater());
                 	mBleProvisioner.openGattServer();
                 	break;
                 case STOP_SCANNING:
@@ -235,8 +236,9 @@ public class OnboardingActivity extends FragmentActivity {
         	Log.d(TAG, "getItem " + position);
         	
         	if (position == 0) {
-        		if (mWelcomeFragment == null) 
+        		if (mWelcomeFragment == null)
         			mWelcomeFragment = new WelcomeFragment();
+        		mWelcomeFragment.setHandler(mHandler);
         		return mWelcomeFragment;
         	} else if (position == 1) {
         		if (mScanningFragment == null)

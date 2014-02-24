@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
+import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
@@ -21,10 +22,13 @@ import android.content.pm.PackageManager;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.cozybit.onboarding.R;
 import com.cozybit.onboarding.app.OnboardingActivity;
+import com.cozybit.onboarding.app.fragments.WelcomeFragment;
+import com.cozybit.onboarding.app.fragments.WelcomeFragment.IUiUpdater;
 
 public class BleProvisioner {
 
@@ -51,12 +55,17 @@ public class BleProvisioner {
 	private State mSavedState;
 	
 	private byte bogusValue = 17;
+	private IUiUpdater mWelcomeFragUiUpdater;
 	
 	private String TAG = "BleProvisioner";
 
 	private UUID mServiceUUID;	
 	private int mRssiThreshold;
 	
+	public void setWelcomFragmentUiUpdater(IUiUpdater obj) {
+		this.mWelcomeFragUiUpdater = obj;
+	}
+
 	private final BluetoothGattCallback mGattCallback = new BluetoothGattCallback() {
         @Override
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
@@ -239,8 +248,11 @@ public class BleProvisioner {
         			 int offset, BluetoothGattCharacteristic characteristic) {
         		 Log.d(TAG, "onCharacteristicReadRequest" );
         		 
-        		 if (mGattServer != null)
+        		 if (mGattServer != null) {
         		     mGattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, new byte[] { bogusValue++ });
+        		     if(mWelcomeFragUiUpdater != null)
+        		    	 mWelcomeFragUiUpdater.updateValue(bogusValue);
+        		 }
         	}
         	
         	@Override
