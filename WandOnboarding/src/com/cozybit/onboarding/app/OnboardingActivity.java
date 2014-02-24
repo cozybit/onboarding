@@ -44,6 +44,8 @@ public class OnboardingActivity extends FragmentActivity {
 	public static final int RESET_TARGET = 14;
 
 	private static int RSSI = -35;
+	
+	private boolean DEBUG = false;
 
 	private Handler mHandler;
 	private MyAdapter mAdapter;
@@ -85,23 +87,23 @@ public class OnboardingActivity extends FragmentActivity {
                 case GATT_CONNECTED:
                 	// TODO Maybe discoverServices should be called from here instead of doing it
                 	// directly on the Ble Provisioner
-                	Toast.makeText(getApplicationContext(), "GATT CONNECTED", Toast.LENGTH_SHORT).show();
+                	if(DEBUG) Toast.makeText(getApplicationContext(), "GATT CONNECTED", Toast.LENGTH_SHORT).show();
                     mBleProvisioner.discoverServices();
                 	break;
                 case GATT_DISCONNECTED:
-                	Toast.makeText(getApplicationContext(), "GATT DISCONNECTED", Toast.LENGTH_SHORT).show();
+                	if(DEBUG) Toast.makeText(getApplicationContext(), "GATT DISCONNECTED", Toast.LENGTH_SHORT).show();
                 	break;
                 case GATT_FAILED:
                 	if (mRetryCount < 5) {
-                		Toast.makeText(getApplicationContext(), "RETRYING GATT connection", Toast.LENGTH_SHORT).show();
+                		if(DEBUG) Toast.makeText(getApplicationContext(), "RETRYING GATT connection", Toast.LENGTH_SHORT).show();
                 		mBleProvisioner.connectGatt();
                 		mRetryCount++;
                 	} else {
-                		Toast.makeText(getApplicationContext(), "Giving up retrying GATT connection", Toast.LENGTH_SHORT).show();
+                		if(DEBUG) Toast.makeText(getApplicationContext(), "Giving up retrying GATT connection", Toast.LENGTH_SHORT).show();
                 	}
                 	break;
                 case GATT_SERVICES_DISCOVERED:
-                	Toast.makeText(getApplicationContext(), "SERVICES DISCOVERED", Toast.LENGTH_SHORT).show();
+                	if(DEBUG) Toast.makeText(getApplicationContext(), "SERVICES DISCOVERED", Toast.LENGTH_SHORT).show();
                 	mBleProvisioner.setCharacteristicNotification(OnboardingGattService.CHARACTERISTIC_STATUS, true);
                 	mBleProvisioner.setCharacteristicNotification(OnboardingGattService.CHARACTERISTIC_LONG_STATUS, true);
                 	
@@ -156,7 +158,7 @@ public class OnboardingActivity extends FragmentActivity {
     	WifiInfo info = mWifiManager.getConnectionInfo();
     	
         if (info == null) {
-        	Toast.makeText(getApplicationContext(), "Not connected to any wifi", Toast.LENGTH_SHORT).show();
+        	if(DEBUG) Toast.makeText(getApplicationContext(), "Not connected to any wifi", Toast.LENGTH_SHORT).show();
         	finish();
         	return;
         }
@@ -165,14 +167,14 @@ public class OnboardingActivity extends FragmentActivity {
         
         if (mNetwork == null) { 
         	// TODO THIS SHOULD BE A DIALOG
-        	Toast.makeText(getApplicationContext(), "Not connected through onboarding setup", Toast.LENGTH_SHORT).show();
+        	if(DEBUG) Toast.makeText(getApplicationContext(), "Not connected through onboarding setup", Toast.LENGTH_SHORT).show();
         	finish();
         	return;
         }
         
         if (info.getNetworkId() != mNetwork.networkId) {
         	// TODO THIS SHOULD BE A DIALOG
-        	Toast.makeText(getApplicationContext(), "Connected to wrong wifi, run onboarding setup", Toast.LENGTH_SHORT).show();
+        	if(DEBUG) Toast.makeText(getApplicationContext(), "Connected to wrong wifi, run onboarding setup", Toast.LENGTH_SHORT).show();
         	finish();
         	return;
         }
