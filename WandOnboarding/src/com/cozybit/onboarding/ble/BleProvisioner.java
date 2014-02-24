@@ -50,6 +50,8 @@ public class BleProvisioner {
 	private State mState = State.DISABLED;
 	private State mSavedState;
 	
+	private byte bogusValue = 17;
+	
 	private String TAG = "BleProvisioner";
 
 	private UUID mServiceUUID;	
@@ -137,6 +139,7 @@ public class BleProvisioner {
         	 mBleBlockingQueue.newResponse(characteristic);
         }
     };
+	private BluetoothGattServer mGattServer;
 
 
 	// Constructor
@@ -198,7 +201,7 @@ public class BleProvisioner {
         final BluetoothManager bluetoothManager =
                 (BluetoothManager) mContext.getSystemService(Context.BLUETOOTH_SERVICE);
         
-        BluetoothGattServer gattServer = bluetoothManager.openGattServer(mContext, new BluetoothGattServerCallback() {
+        this.mGattServer = bluetoothManager.openGattServer(mContext, new BluetoothGattServerCallback() {
         	
         	/* TODO Here we should @Override any method we want to handle
         	 * 
@@ -235,6 +238,9 @@ public class BleProvisioner {
         	public void onCharacteristicReadRequest(BluetoothDevice device, int requestId,
         			 int offset, BluetoothGattCharacteristic characteristic) {
         		 Log.d(TAG, "onCharacteristicReadRequest" );
+        		 
+        		 if (mGattServer != null)
+        		     mGattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, new byte[] { bogusValue++ });
         	}
         	
         	@Override
@@ -265,7 +271,7 @@ public class BleProvisioner {
         
         
         
-        gattServer.addService(service);
+        mGattServer.addService(service);
 
 	}
 	
