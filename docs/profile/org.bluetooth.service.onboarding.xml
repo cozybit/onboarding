@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <!-- Created with Liquid XML Studio Designer Edition 9.1.2.3326 (http://www.liquid-technologies.com) -->
 <!-- Copyright 2011 Bluetooth SIG, Inc. All rights reserved. -->
-<Service xsi:noNamespaceSchemaLocation="http://schemas.bluetooth.org/Documents/service.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" type="org.bluetooth.service.onboarding" uuid="C001" name="Onboarding" last-modified="2014-01-17" approved="No">
+<Service xsi:noNamespaceSchemaLocation="http://schemas.bluetooth.org/Documents/service.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" type="org.bluetooth.service.onboarding" uuid="FFFFFFFFC0C1FFFFC0C1201401000000" name="Onboarding" last-modified="2014-01-17" approved="No">
 	<InformativeText>
 		The Onboarding Service exposes characteristics required for an
 		Onboarder Device to configure an Onboardee to connect to a
@@ -90,28 +90,9 @@
 				<Broadcast>Excluded</Broadcast>
 			</Properties>
 		</Characteristic>
-		<Characteristic name="connect" type="org.bluetooth.characteristic.connect">
+		<Characteristic name="command" type="org.bluetooth.characteristic.command" uuid="FFFFFFFFC0C1FFFFC0C1201401000008">
 			<InformativeText>
-				This is the function that triggers a connection
-				to the target wifi network.  
-			</InformativeText>
-			<Requirement>Mandatory</Requirement>
-			<Properties>
-				<Read>Excluded</Read>
-				<Write>Mandatory</Write>
-				<WriteWithoutResponse>Excluded</WriteWithoutResponse>
-				<SignedWrite>Excluded</SignedWrite>
-				<ReliableWrite>Excluded</ReliableWrite>
-				<Notify>Excluded</Notify>
-				<Indicate>Excluded</Indicate>
-				<WritableAuxiliaries>Excluded</WritableAuxiliaries>
-				<Broadcast>Excluded</Broadcast>
-			</Properties>
-		</Characteristic>
-		<Characteristic name="disconnect" type="org.bluetooth.characteristic.disconnect">
-			<InformativeText>
-				This is the function that triggers a disconnection
-				to the target wifi network.  
+				This is the function used to send commands to the onboardee.
 			</InformativeText>
 			<Requirement>Mandatory</Requirement>
 			<Properties>
