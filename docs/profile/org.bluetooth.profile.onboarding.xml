@@ -1,19 +1,19 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <!-- Copyright 2011 Bluetooth SIG, Inc. All rights reserved. -->
-<Profile xsi:noNamespaceSchemaLocation="http://schemas.bluetooth.org/Documents/profile.xsd" 
+<Profile xsi:noNamespaceSchemaLocation="http://schemas.bluetooth.org/Documents/profile.xsd"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	type="org.bluetooth.profile.onboarding"
 	name="Onboarding">
 	<InformativeText>
 		<Abstract>
 			The Onboarding profile enables one device to configure
-			another device in order to connect to a WiFi network.  
+			another device in order to connect to a WiFi network.
 		</Abstract>
 		<Summary>
 			The Onboarding profile defines how one device that is
 			connected to a wireless network (the onboarder) can use
 			Bluetooth to bring another device (onboardee) onto that
-			same wireless network.  
+			same wireless network.
 
 			The profile supports transferring the wireless
 			configuration parameters from the onboarder onto the
@@ -22,10 +22,6 @@
 		</Summary>
 	</InformativeText>
 	<Role name="Onboarder">
-		<Service type="org.bluetooth.service.onboarding">
-			<Declaration>Primary</Declaration>
-			<Requirement>Mandatory</Requirement>
-		</Service>
 	</Role>
 	<Role name="Onboardee">
 		<Service type="org.bluetooth.service.onboarding">
