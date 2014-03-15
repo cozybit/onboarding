@@ -22,7 +22,7 @@
 	</Transports>
 	<ErrorCodes></ErrorCodes>
 	<Characteristics>
-		<Characteristic name="ssid" type="org.bluetooth.characteristic.ssid">
+		<Characteristic name="ssid" type="org.bluetooth.characteristic.ssid" uuid="FFFFFFFFC0C1FFFFC0C1201401000003">
 			<InformativeText>
 				This is the SSID of the target wifi network.
 			</InformativeText>
@@ -39,7 +39,7 @@
 				<Broadcast>Excluded</Broadcast>
 			</Properties>
 		</Characteristic>
-		<Characteristic name="passphrase" type="org.bluetooth.characteristic.passphrase">
+		<Characteristic name="passphrase" type="org.bluetooth.characteristic.passphrase" uuid="FFFFFFFFC0C1FFFFC0C1201401000005">
 			<InformativeText>
 				This is the passphrase of the target wifi network.
 			</InformativeText>
@@ -56,7 +56,7 @@
 				<Broadcast>Excluded</Broadcast>
 			</Properties>
 		</Characteristic>
-		<Characteristic name="authentication" type="org.bluetooth.characteristic.authentication">
+		<Characteristic name="authentication" type="org.bluetooth.characteristic.authentication" uuid="FFFFFFFFC0C1FFFFC0C1201401000004">
 			<InformativeText>
 				This is the authentication mode of the target wifi network.
 			</InformativeText>
@@ -73,7 +73,7 @@
 				<Broadcast>Excluded</Broadcast>
 			</Properties>
 		</Characteristic>
-		<Characteristic name="channel" type="org.bluetooth.characteristic.channel">
+		<Characteristic name="channel" type="org.bluetooth.characteristic.channel" uuid="FFFFFFFFC0C1FFFFC0C1201401000006">
 			<InformativeText>
 				This is the channel of the target wifi network.
 			</InformativeText>
@@ -90,7 +90,7 @@
 				<Broadcast>Excluded</Broadcast>
 			</Properties>
 		</Characteristic>
-		<Characteristic name="command" type="org.bluetooth.characteristic.command" uuid="FFFFFFFFC0C1FFFFC0C1201401000008">
+		<Characteristic name="command" type="org.bluetooth.characteristic.command" uuid="FFFFFFFFC0C1FFFFC0C1201401000007">
 			<InformativeText>
 				This is the function used to send commands to the onboardee.
 			</InformativeText>
@@ -107,7 +107,7 @@
 				<Broadcast>Excluded</Broadcast>
 			</Properties>
 		</Characteristic>
-		<Characteristic name="status" type="org.bluetooth.characteristic.status">
+		<Characteristic name="status" type="org.bluetooth.characteristic.status" uuid="FFFFFFFFC0C1FFFFC0C1201401000001">
 			<InformativeText>
 				This indication is used by the Onbordee to
 				report status to the Onboarder.
@@ -125,10 +125,46 @@
 				<Broadcast>Excluded</Broadcast>
 			</Properties>
 		</Characteristic>
-		<Characteristic name="long_status" type="org.bluetooth.characteristic.long_status">
+		<Characteristic name="detailed_status" type="org.bluetooth.characteristic.detailed_status" uuid="FFFFFFFFC0C1FFFFC0C1201401000002">
 			<InformativeText>
-				This characteristic can be used by the Onbordee to
-				obtain a longer status message from the Onboarder.
+                This indication is used by the Onbordee to
+                report detailed status to the Onboarder.
+			</InformativeText>
+			<Requirement>Mandatory</Requirement>
+			<Properties>
+				<Read>Mandatory</Read>
+				<Write>Excluded</Write>
+				<WriteWithoutResponse>Excluded</WriteWithoutResponse>
+				<SignedWrite>Excluded</SignedWrite>
+				<ReliableWrite>Excluded</ReliableWrite>
+				<Notify>Excluded</Notify>
+				<Indicate>Excluded</Indicate>
+				<WritableAuxiliaries>Excluded</WritableAuxiliaries>
+				<Broadcast>Excluded</Broadcast>
+			</Properties>
+        </Characteristic>
+		<Characteristic name="device_id" type="org.bluetooth.characteristic.device_id" uuid="FFFFFFFFC0C1FFFFC0C1201401000008">
+			<InformativeText>
+                This indication is used by the Onbordee to
+                report what type of device it is to the Onboarder.
+			</InformativeText>
+			<Requirement>Mandatory</Requirement>
+			<Properties>
+				<Read>Mandatory</Read>
+				<Write>Excluded</Write>
+				<WriteWithoutResponse>Excluded</WriteWithoutResponse>
+				<SignedWrite>Excluded</SignedWrite>
+				<ReliableWrite>Excluded</ReliableWrite>
+				<Notify>Excluded</Notify>
+				<Indicate>Excluded</Indicate>
+				<WritableAuxiliaries>Excluded</WritableAuxiliaries>
+				<Broadcast>Mandatory</Broadcast>
+			</Properties>
+        </Characteristic>
+		<Characteristic name="vendor_id" type="org.bluetooth.characteristic.vendor_id" uuid="FFFFFFFFC0C1FFFFC0C1201401000009">
+			<InformativeText>
+                This indication is used by the Onbordee to
+                report its vendor id to the Onboarder.
 			</InformativeText>
 			<Requirement>Mandatory</Requirement>
 			<Properties>
