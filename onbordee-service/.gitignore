@@ -1,0 +1,8 @@
+bin/
+gen/
+jdocs/
+.metadata
+.settings
+.classpath
+local.properties
+*.swp
