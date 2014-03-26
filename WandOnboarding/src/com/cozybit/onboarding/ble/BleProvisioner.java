@@ -44,23 +44,25 @@ public class BleProvisioner {
 		FAILED,			// Provisioner has failed
 		PAUSED;			// Provisioner is paused
 	}
-	
+
 	private State mState = State.DISABLED;
 	private State mSavedState;
-	
-	private String TAG = "BleProvisioner";
+
+	private String TAG = BleProvisioner.class.getName();
 
 	private UUID mServiceUUID;	
 	private int mRssiThreshold;
-	
+
 	private final BluetoothGattCallback mGattCallback = new BluetoothGattCallback() {
         @Override
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
+        	Log.d(TAG, "onConnectionStateChange() - status: " + status  + ", newState: " + newState);
+
             if (newState == BluetoothProfile.STATE_CONNECTED) {
                 mState = State.CONNECTED;
                 Log.i(TAG, "Connected to GATT server.");
                 mHandler.sendEmptyMessage(OnboardingActivity.GATT_CONNECTED);
-          
+                
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
             	if (mState == State.DISCONNECTING) {
             		mState = State.DISCONNECTED;
@@ -75,8 +77,15 @@ public class BleProvisioner {
 
         @Override
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
+        	Log.d(TAG, "onServicesDiscovered() - status: " + status);        	
             if (status == BluetoothGatt.GATT_SUCCESS) {
-                Log.w(TAG, "onServicesDiscovered!!!: " + status);
+                Log.w(TAG, "services discovered successfully: " + status);
+            	List<BluetoothGattService> services = gatt.getServices();
+            	if(services != null) {
+            		for (BluetoothGattService bluetoothGattService : services)
+    					Log.d(TAG, " - uuid: " + bluetoothGattService.getUuid().toString() );
+            	} else
+            		Log.d(TAG, "OPS!! No services available!!!");
                 mHandler.sendEmptyMessage(OnboardingActivity.GATT_SERVICES_DISCOVERED);
             } else {
                 Log.w(TAG, "onServicesDiscovered received: " + status);
@@ -211,6 +220,9 @@ public class BleProvisioner {
 		}
 */		
         mState = State.SCANNING;
+        //startLeScan filtering by UUID is broken and only works for 16bit UUID
+        //http://stackoverflow.com/questions/20352200/android-ble-retrieve-service-uuid-in-onlescan-callback-when-advertised-from
+        //https://code.google.com/p/android/issues/detail?id=58931
         mBluetoothAdapter.startLeScan(mLeScanCallback);
 	}
 	
@@ -276,15 +288,27 @@ public class BleProvisioner {
 
         @Override
         public void onLeScan(final BluetoothDevice device, final int rssi, byte[] scanRecord) {
-        	if (rssi >= mRssiThreshold) { // If device is close enough 
-        		if (hasServiceUUID(scanRecord)) { // If device advertise searched UUID
+        	Log.d(TAG, "onLeScan -> device: " + device.getAddress() + " - scanRecord: " + Arrays.toString(scanRecord) );
+        	if (rssi >= mRssiThreshold) { // If device is close enough
+        		if ( hasServiceUUID(scanRecord) ) { // If device advertise searched UUID
         			Log.d(TAG,"Found an onboarding device!");
         			stopScanLeDevices();
         			mDevice = device;
         			mHandler.sendEmptyMessage(OnboardingActivity.DETECTED_DEVICE);
+        		} else {
+        			/* TODO: android in peripheral mode seems to send bogus advertising info (something like [2,1,0..... 0])
+        			 * Since it's almost empty and does not contain any meaningful info about the available services, 
+        			 * it's impossible to do a proper filtering. As a workaround, lets just filter by MAC address and keep moving.
+        			*/
+                	if( device.getAddress().equals("AA:EA:04:C3:6B:91") ) {
+                		Log.d(TAG,"Found our MK908 device!!");
+                		stopScanLeDevices();
+                		mDevice = device;
+            			mHandler.sendEmptyMessage(OnboardingActivity.DETECTED_DEVICE);
+                	}
         		}
         	}
-        }  		          
+        }
     };
 
 	public boolean connectGatt() {
@@ -377,15 +401,13 @@ public class BleProvisioner {
 		        if (!mBluetoothGatt.setCharacteristicNotification(characteristic, enabled))
 					Log.w(TAG, "setCharacteristicNotification not possible for UUID " + characteristicUUID.toString());
 		        
+		        //TODO it's not clear why this value needs to be set in order to get characteristic's callbacks.
 		        List <BluetoothGattDescriptor> descriptors = characteristic.getDescriptors();
+		        Log.d(TAG, "is GattDescriptors list empty? Size : " + descriptors.size() );
 		        for (BluetoothGattDescriptor bluetoothGattDescriptor : descriptors) {
-		        	if (enabled) {
-		        		if (!bluetoothGattDescriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE))
-		        			Log.w(TAG, "setValue not possible for UUID " + characteristicUUID.toString());
-		        	} else {
-		        		if (!bluetoothGattDescriptor.setValue(BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE))
-		        			Log.w(TAG, "setValue not possible for UUID " + characteristicUUID.toString());
-		        	}
+		        	byte[] value = (enabled) ? BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE : BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE;
+		        	if (!bluetoothGattDescriptor.setValue(value))
+	        			Log.w(TAG, "setValue not possible for UUID " + characteristicUUID.toString());
 		    		if (!mBluetoothGatt.writeDescriptor(bluetoothGattDescriptor))
 		    			Log.w(TAG, "writeDescriptor not possible for UUID " + characteristicUUID.toString());
 				}
