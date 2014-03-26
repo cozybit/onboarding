@@ -43,7 +43,9 @@ public class OnboardingActivity extends FragmentActivity {
 	public static final int DISCONNECT_TARGET = 13;
 	public static final int RESET_TARGET = 14;
 
-	private static int RSSI = -35;
+	//TODO Increase RSSI threshold just to make development easier
+	//private static int RSSI = -35;
+	private static int RSSI = -85;
 	
 	private boolean DEBUG = false;
 
