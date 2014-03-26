@@ -1,0 +1,67 @@
+digraph bt_connection_state_machine {
+    // Different states
+    a [label="OFF"];
+    b [label="BOOTING"];
+    c [label="WAITING_4_CLIENTS"];
+    d [label="VALIDATING_CLIENT"];
+    e [label="CLIENT_CONNECTED"];
+    f [label="FAILED"];
+
+    // Transitions between states
+    a -> b [label="init"];
+    b -> c [label="boot_completed"];
+    b -> f [label="boot_error"];
+    c -> d [label="client_connected"];
+    d -> c [label="invalid_client"];
+    d -> e [label="client_valid"];
+    e -> c [label="client_disconnected"];
+    e -> e [label="received_data"];
+
+    //Legend for events
+    { 
+        rank = sink;
+        Legend [shape=none, margin=0, label=<
+            <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+                <TR>
+                    <TD COLSPAN="2"><B>Event's Legend</B></TD>
+                </TR>
+                <TR>
+                    <TD>init</TD>
+                    <TD>initiate state machine</TD>
+                </TR>
+                <TR>
+                    <TD>boot_completed</TD>
+                    <TD>bluetooth is enabled AND gatt server succesfully created</TD>
+                </TR>
+                <TR>
+                    <TD>boot_error</TD>
+                    <TD>no bluetooth available OR bluetooth failed OR gatt server failed</TD>
+                </TR>
+                <TR>
+                    <TD>client_connected</TD>
+                    <TD>new client stablishes connection</TD>
+                </TR>
+                <TR>
+                    <TD>invalid_client</TD>
+                    <TD>client's rssi under valid threshold</TD>
+                </TR>
+                <TR>
+                    <TD>client_valid</TD>
+                    <TD>client's rssi above valid threshold</TD>
+                </TR>
+                <TR>
+                    <TD>client_disconnected</TD>
+                    <TD>client disconnects for whatever reason</TD>
+                </TR>
+                <TR>
+                    <TD>received_data</TD>
+                    <TD>recieved data from client</TD>
+                </TR>
+                <TR>
+                    <TD>shut_down</TD>
+                    <TD>to turn state machin off</TD>
+                </TR>
+            </TABLE>
+        >];
+    }
+}
