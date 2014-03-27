@@ -1,5 +1,6 @@
-package com.cozybit.onbordee;
+package com.cozybit.onbordee.activities;
 
+import com.cozybit.onbordee.R;
 import com.cozybit.onbordee.service.OnboardeeService;
 
 import android.os.Bundle;
@@ -18,13 +19,14 @@ public class OnboardeeActivity extends Activity {
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
+		
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_onboardee);
 		
 		mStartServiceButton = (Button) findViewById(R.id.startServiceButton);
 		mStopServiceButton = (Button) findViewById(R.id.stopServiceButton);
 		
-		mServiceIntent = new Intent(this, OnboardeeService.class);
+		mServiceIntent = new Intent(getApplicationContext(), OnboardeeService.class);
 		
 		mStartServiceButton.setOnClickListener(new OnClickListener() {
 			@Override

@@ -19,7 +19,7 @@
         android:label="@string/app_name"
         android:theme="@style/AppTheme" >
         <activity
-            android:name="com.cozybit.onbordee.OnboardeeActivity"
+            android:name="com.cozybit.onbordee.activities.OnboardeeActivity"
             android:label="@string/title_activity_onboardee" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
