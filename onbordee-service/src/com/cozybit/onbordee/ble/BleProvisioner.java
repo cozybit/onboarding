@@ -3,6 +3,8 @@ package com.cozybit.onbordee.ble;
 import java.util.Arrays;
 import java.util.UUID;
 
+import com.cozybit.onbordee.utils.Log;
+
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
@@ -13,7 +15,6 @@ import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.content.Context;
-import android.util.Log;
 
 public class BleProvisioner {
 
@@ -117,7 +118,7 @@ public class BleProvisioner {
     	@Override
     	public void onCharacteristicReadRequest(BluetoothDevice device, int requestId,
     			 int offset, BluetoothGattCharacteristic characteristic) {
-    		 Log.d(TAG, "onCharacteristicReadRequest -> uuid: " + characteristic.getUuid());
+    		 Log.d(TAG, "onCharacteristicReadRequest -> uuid: %s", characteristic.getUuid().toString());
     		 
     		 if (mGattServer != null) {
     			 
@@ -140,7 +141,7 @@ public class BleProvisioner {
     			} else if( uuid.equals(OnboardingGattService.CHARACTERISTIC_DEVICE_ID) ) {
     				value[0] = 101;
     			} else {
-    				Log.d(TAG, "Unknown characteristic! --> uuid: " + uuid.toString() );
+    				Log.d(TAG, "Unknown characteristic! --> uuid: %s", uuid.toString() );
     			}
     			
     			mGattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, value);
@@ -156,7 +157,7 @@ public class BleProvisioner {
     	public void onCharacteristicWriteRequest(BluetoothDevice device, int requestId, 
     			BluetoothGattCharacteristic characteristic, boolean preparedWrite, 
     			boolean responseNeeded, int offset, byte[] value) {
-    		Log.d(TAG, "onCharacteristicWriteRequest() -> uuid: " + characteristic.getUuid() + ", value: " + Arrays.toString(value));
+    		Log.d(TAG, "UUID: %s, Value: %s", characteristic.getUuid(), Arrays.toString(value) );
 
 	   		 if (mGattServer != null) {
 	   			UUID uuid = characteristic.getUuid();
@@ -178,8 +179,7 @@ public class BleProvisioner {
 		//Callback indicating when a remote device has been connected or disconnected.
 		@Override
 		public void onConnectionStateChange(BluetoothDevice device, int status, int newState) {
-			Log.d(TAG, "onConnectionStateChange(): device " + device.getAddress() + "; status: " 
-					+ status + ", newState: " + newState);
+			Log.d(TAG, "Device: %s | Status: %d | newSate: %d", device.getAddress(), status, newState);
 			
 			switch(newState) {
 			case BluetoothProfile.STATE_CONNECTED:
@@ -194,13 +194,13 @@ public class BleProvisioner {
     	//Execute all pending write operations for this device.
     	@Override
     	public void onExecuteWrite(BluetoothDevice device, int requestId, boolean execute) {
-    		Log.d(TAG, "onExecuteWrite() -> device: " + device.getAddress() + ", requestId:: " + requestId + ", execute: " + execute );
+    		Log.d(TAG, "Device: %s | requestId: %d | execure: %b", device.getAddress(), requestId, execute );
     	}
     	
     	//Indicates whether a local service has been added successfully.
     	@Override
     	public void onServiceAdded(int status, BluetoothGattService service) {
-   		 	Log.d(TAG, "onServiceAdded() -> status: " + status + ", service (uuid): " + service.getUuid() );
+   		 	Log.d(TAG, "Status: %d Service (UUID): %s", status, service.getUuid() );
     	}
     	
 	};
@@ -216,7 +216,7 @@ public class BleProvisioner {
 	public boolean setup() {
 		
 		if (mContext == null) {
-			Log.d(TAG,"ERROR: context not available.");
+			Log.e(TAG,"ERROR: context not available.");
 			return false;
 		}
 		
@@ -271,7 +271,7 @@ public class BleProvisioner {
         for (BluetoothGattCharacteristic c : generateCharacteristics() )
         	service.addCharacteristic(c);
         boolean serviceAdded = mGattServer.addService(service);
-        Log.d(TAG, "was mGattServer.addService(service) successful?? " + serviceAdded);
+        Log.d(TAG, "was mGattServer.addService(service) successful? %b", serviceAdded);
 	}
 
 	private BluetoothGattCharacteristic[] generateCharacteristics() {
@@ -339,7 +339,7 @@ public class BleProvisioner {
         BluetoothGattService gattService = mBluetoothGatt.getService(mServiceUUID);
 		
   		if (gattService == null) {
-  			Log.w(TAG, "GATT Service not found for UUID " + mServiceUUID.toString());
+  			Log.w(TAG, "GATT Service not found for UUID: %s", mServiceUUID.toString());
   			return null;
   		}
   		// Get Characteristic
@@ -351,7 +351,7 @@ public class BleProvisioner {
 		final BluetoothGattCharacteristic characteristic = getCharacteristicFromUUID(characteristicUUID);
   		
   		if (characteristic == null) {
-  			Log.w(TAG, "Problem getting characteristic from UUID " + characteristicUUID.toString());
+  			Log.w(TAG, "Problem getting characteristic from UUID %s", characteristicUUID.toString());
   			return;
   		}
   		
@@ -362,7 +362,7 @@ public class BleProvisioner {
   				characteristic.setValue(value);
   				
   		        if (!mBluetoothGatt.writeCharacteristic(characteristic))
-  					Log.w(TAG, "writeCharacteristic not possible for UUID " + characteristicUUID.toString());
+  					Log.w(TAG, "writeCharacteristic not possible for UUID %s", characteristicUUID.toString());
   			}
   		}, true);
         
@@ -373,7 +373,7 @@ public class BleProvisioner {
 		final BluetoothGattCharacteristic characteristic = getCharacteristicFromUUID(characteristicUUID);
   		
   		if (characteristic == null) {
-  			Log.w(TAG, "Problem getting characteristic from UUID " + characteristicUUID.toString());
+  			Log.w(TAG, "Problem getting characteristic from UUID %s", characteristicUUID.toString());
   			return;
   		}
   		
@@ -384,7 +384,7 @@ public class BleProvisioner {
   				characteristic.setValue(value);
   				
   		        if (!mBluetoothGatt.writeCharacteristic(characteristic))
-  					Log.w(TAG, "writeCharacteristic not possible for UUID " + characteristicUUID.toString());
+  					Log.w(TAG, "writeCharacteristic not possible for UUID %s", characteristicUUID.toString());
   			}
   		}, true);
         
