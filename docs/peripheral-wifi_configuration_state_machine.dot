@@ -1,0 +1,85 @@
+digraph wifi_configuration_state_machine {
+    // Different states
+    a [label="OFF"];
+    b [label="BRINGING_UP"];
+    c [label="IDLE"];
+    d [label="CONNECTING"];
+    e [label="CONNECTED"];
+    f [label="FAILED"];
+
+    // Transitions between states
+    a -> b [label="init"];
+    b -> c [label="boot_completed"];
+    b -> f [label="boot_error"]; // no wifi available OR hw fails to bring up
+    c -> d [label="connect_to_wifi"]; //cmd connect received
+    d -> c [label="invalid_parameters"]; //invalid/missing/wrong format parameters
+    d -> f [label="connection_rejected"]; //network rejected connection
+    d -> f [label="failed_connecting"]; //generic fail while connecting (AP is gone, etc)
+    d -> e [label="wifi_connected"]; //wifi is connected to the network 
+    e -> d [label="wifi_disconnected"]; //wifi disconnects for some reason.
+    e -> c [label="forget_wifi"]; //received CMDs as: disconnect, resets.
+    e -> f [label="wifi_crash"]; //something happened to the wifi interface
+    f -> c [label="forget_wifi"]; //
+    f -> d [label="connect_to_wifi"]; //
+
+
+    //Legend for events
+    { 
+        rank = sink;
+        Legend [shape=none, margin=0, label=<
+            <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+                <TR>
+                    <TD COLSPAN="2"><B>Event Description</B></TD>
+                </TR>
+                <TR>
+                    <TD>init</TD>
+                    <TD>initiate state machine</TD>
+                </TR>
+                <TR>
+                    <TD>boot_completed</TD>
+                    <TD>wifi is up and ready</TD>
+                </TR>
+                <TR>
+                    <TD>boot_error</TD>
+                    <TD>no wifi iface available OR wifi iface failed to bring up</TD>
+                </TR>
+                <TR>
+                    <TD>connect_to_wifi</TD>
+                    <TD>CMD to connect to a wifi network received</TD>
+                </TR>
+                <TR>
+                    <TD>invalid_parameters</TD>
+                    <TD>onboarding parameters are misisng or wrong format</TD>
+                </TR>
+                <TR>
+                    <TD>connection_rejected</TD>
+                    <TD>wifi connection was rejected by the network</TD>
+                </TR>
+                <TR>
+                    <TD>failed_connecting</TD>
+                    <TD>wifi connection never succeded</TD>
+                </TR>
+                <TR>
+                    <TD>wifi_connected</TD>
+                    <TD>wifi connection succeded</TD>
+                </TR>
+                <TR>
+                    <TD>wifi_disconnected</TD>
+                    <TD>wifi got disconnected for some reason</TD>
+                </TR>
+                <TR>
+                    <TD>forget_wifi</TD>
+                    <TD>CMD disconnect/reset was received</TD>
+                </TR>
+                <TR>
+                    <TD>wifi_crash</TD>
+                    <TD>something when terribly wrong with wifi iface</TD>
+                </TR>
+                <TR>
+                    <TD>shut_down</TD>
+                    <TD>turn state machine off</TD>
+                </TR>
+            </TABLE>
+        >];
+    }
+}

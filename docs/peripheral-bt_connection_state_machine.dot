@@ -23,7 +23,7 @@ digraph bt_connection_state_machine {
         Legend [shape=none, margin=0, label=<
             <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
                 <TR>
-                    <TD COLSPAN="2"><B>Event's Legend</B></TD>
+                    <TD COLSPAN="2"><B>Event Description</B></TD>
                 </TR>
                 <TR>
                     <TD>init</TD>
