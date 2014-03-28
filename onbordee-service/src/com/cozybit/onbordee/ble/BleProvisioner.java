@@ -3,6 +3,8 @@ package com.cozybit.onbordee.ble;
 import java.util.Arrays;
 import java.util.UUID;
 
+import com.cozybit.onbordee.ble.BtConnectionManager.Events;
+import com.cozybit.onbordee.ble.BtConnectionManager.SubEvents;
 import com.cozybit.onbordee.utils.Log;
 
 import android.bluetooth.BluetoothAdapter;
@@ -15,91 +17,25 @@ import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.content.Context;
+import android.content.pm.PackageManager;
 
 public class BleProvisioner {
 
 	private String TAG = BleProvisioner.class.getName();
 	
+	private Context mContext;
+	private IBtConnectionManager mBtConnMngr;
+	
 	private boolean mBtInitState;
+	private BluetoothManager mBluetoothManager;
 	private BluetoothAdapter mBluetoothAdapter;
 	
-	private Context mContext;
+	private UUID mServiceUUID = OnboardingGattService.SERVICE_UUID;
+	
     private BluetoothGatt mBluetoothGatt;
+    private BluetoothGattServer mGattServer;
     private BleBlockingQueue mBleBlockingQueue;
     
-    private UUID mServiceUUID = OnboardingGattService.SERVICE_UUID;
-
-	/*private final BluetoothGattCallback mGattCallback = new BluetoothGattCallback() {
-        @Override
-        public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
-            if (newState == BluetoothProfile.STATE_CONNECTED) {
-                mState = State.CONNECTED;
-                Log.i(TAG, "Connected to GATT server.");
-                mHandler.sendEmptyMessage(OnboardingActivity.GATT_CONNECTED);
-          
-            } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-            	if (mState == State.DISCONNECTING) {
-            		mState = State.DISCONNECTED;
-            		Log.i(TAG, "Correctly disconnected from GATT server.");
-            		mHandler.sendEmptyMessage(OnboardingActivity.GATT_DISCONNECTED);
-            	} else {
-            		Log.i(TAG, "Something wrong happened and we're disconnected from GATT server.");
-            		mHandler.sendEmptyMessage(OnboardingActivity.GATT_FAILED);
-            	}
-            }
-        }
-
-        @Override
-        public void onCharacteristicRead(BluetoothGatt gatt,
-                                         BluetoothGattCharacteristic characteristic,
-                                         int status) {
-            if (status == BluetoothGatt.GATT_SUCCESS) {
-            	 Log.d(TAG, "onCharacteristicRead received: " + status);
-            	 mBleBlockingQueue.newResponse(characteristic);
-            	 
-            	 final byte[] data = characteristic.getValue();
-                 if (data != null && data.length > 0) {
-
-                 	String value = new String(data);
-            	 	
-     	       	 	if (characteristic.getUuid().equals(OnboardingGattService.CHARACTERISTIC_VENDOR_ID)) {
-     	       	 		mHandler.sendMessage(Message.obtain(mHandler, OnboardingActivity.VENDOR_ID_READ, value));
-     	       	 	} else if (characteristic.getUuid().equals(OnboardingGattService.CHARACTERISTIC_DEVICE_ID)) {
-     	       	 		mHandler.sendMessage(Message.obtain(mHandler, OnboardingActivity.DEVICE_ID_READ, value));
-     	       	 	}
-                 }
-            }
-        }
-
-        @Override
-        public void onCharacteristicChanged(BluetoothGatt gatt,
-                                            BluetoothGattCharacteristic characteristic) {
-       	 	Log.d(TAG, "onCharacteristicChanged received: " + new String(characteristic.getValue()));
-       	 	// TODO notifications are not passed to the blocking queue
-       	 	// mBleBlockingQueue.newResponse(characteristic);
-       	 	
-            final byte[] data = characteristic.getValue();
-            if (data != null && data.length > 0) {
-
-            	String value = new String(data);
-       	 	
-	       	 	if (characteristic.getUuid().equals(OnboardingGattService.CHARACTERISTIC_STATUS)) {
-	       	 		mHandler.sendMessage(Message.obtain(mHandler, OnboardingActivity.STATUS_NOTIFIED, value));
-	       	 	} else if (characteristic.getUuid().equals(OnboardingGattService.CHARACTERISTIC_LONG_STATUS)) {
-	       	 		mHandler.sendMessage(Message.obtain(mHandler, OnboardingActivity.LONG_STATUS_NOTIFIED, value));
-	       	 	}
-            }
-        }
-        
-        @Override
-        public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
-	       	 Log.d(TAG, "onCharacteristicWrite received: " + status);      
-        	 mBleBlockingQueue.newResponse(characteristic);
-        }
-    };*/
-    
-	private BluetoothGattServer mGattServer;
-	
 	private BluetoothGattServerCallback mBtGattServerCbk = new BluetoothGattServerCallback() {
     	
     	/* Missing methods to implement. Keep them in mind, because we might need them for something:
@@ -201,77 +137,96 @@ public class BleProvisioner {
     	@Override
     	public void onServiceAdded(int status, BluetoothGattService service) {
    		 	Log.d(TAG, "Status: %d Service (UUID): %s", status, service.getUuid() );
+   		 	mBtConnMngr.sendMessage(Events.GATT_SERVER_DEPLOYED);
     	}
     	
 	};
 	
 
 	// Constructor
-	public BleProvisioner(Context context) {
+	public BleProvisioner(Context context, IBtConnectionManager conMngr) {
 		mContext = context;
+		mBtConnMngr = conMngr;
 	}
 	
 	/*TODO If Bluetooth is not enabled when the service is started, there will be a race 
 	 * condition (BT needs some ms to be loaded) and there will be NPE when starting the service*/
-	public boolean setup() {
+	public void setup() {
 		
 		if (mContext == null) {
 			Log.e(TAG,"ERROR: context not available.");
-			return false;
+			mBtConnMngr.sendMessage(Events.INIT_ERROR);
+			return;
 		}
 		
-		// Initializes a Bluetooth adapter.  For API level 18 and above, get a reference to
-        // BluetoothAdapter through BluetoothManager.
-        final BluetoothManager bluetoothManager = (BluetoothManager) mContext.getSystemService(Context.BLUETOOTH_SERVICE);
-        mBluetoothAdapter = bluetoothManager.getAdapter();
-        
-        // check for Bluetooths upport
-        if (mBluetoothAdapter == null) {
-        	Log.e(TAG, "ERROR: this android device has no Bluetooth support.");
-            return false;
-        }
+        mBluetoothManager = (BluetoothManager) mContext.getSystemService(Context.BLUETOOTH_SERVICE);
+        mBluetoothAdapter = mBluetoothManager.getAdapter();
 
-        // Comment this out, because MK908 seems to not have BLE enabled as feature
-        // check for BLE support
-        /*if ( getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE) ) {
-			Log.e(TAG, "ERROR: this android device has no Bluetooth LE support. Aborting service");
-            return false;
-        }*/
-        
-        mBtInitState = isBtEnabled(); 
-        
-        //TODO: we might need to use intents in order to track the real state of BT. Use this for now
-        if ( !mBtInitState )
-        	if( ! mBluetoothAdapter.enable() )
-        		return false;
-		
-        Log.d(TAG , "Bluetooth initialized.");
-        return true;
+        // check for Bluetooth support
+        if ( mBluetoothAdapter == null) {
+        	Log.e(TAG, "ERROR: this android device has no Bluetooth support.");
+        	mBtConnMngr.sendMessage(Events.INIT_ERROR, SubEvents.NO_BLE_AVAILABLE);
+        	return;
+        } /*else if ( mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE) ) {
+        	// N5, MK908 seems to not have BLE enabled as featurecheck for BLE support.
+        	Log.e(TAG, "ERROR: this android device has no Bluetooth LE support.");
+        	mBtConMngr.sendMessage(Events.INIT_ERROR, SubEvents.NO_BLE_AVAILABLE);
+        	return;
+        }*/ else {
+            if( mBluetoothAdapter.isEnabled() ) {
+            	mBtConnMngr.sendMessage(Events.INIT);
+            	mBtConnMngr.sendMessage(Events.BLUETOOTH_ON);
+            } else {
+            	if( mBluetoothAdapter.enable() )
+            		mBtConnMngr.sendMessage(Events.INIT);
+            	else
+        			mBtConnMngr.sendMessage(Events.INIT_ERROR, SubEvents.BT_BROKEN);
+            }
+        }
 	}
-	
-	public boolean isBtEnabled() {
-		if (mBluetoothAdapter == null)
-			return false;
-		
-		return mBluetoothAdapter.isEnabled();
-	}
-	
+
 	public void tearDown() {
+		stopGattServer();
 		//leave BT as in its initial state
 		if( !mBtInitState )
 			mBluetoothAdapter.disable();
 	}
 	
-	public void startGattServer() {
+	public void deployGattServer() {
+		Log.d(TAG, "Deploying Gatt Server...");
 		
-        final BluetoothManager bluetoothManager = (BluetoothManager) mContext.getSystemService(Context.BLUETOOTH_SERVICE);
-        mGattServer = bluetoothManager.openGattServer(mContext, mBtGattServerCbk);
-        mGattServer.clearServices();
+		/*TODO: many times, BluetoothManager fails opening the GattServer 
+		 * and it returns null. Probably it's because we still have to wait for
+		 * things to get initialized */
+		try { Thread.sleep(500); } catch (InterruptedException e) {}
+		
+        mGattServer = mBluetoothManager.openGattServer(mContext, mBtGattServerCbk);
+        if(mGattServer == null) {
+        	Log.e(TAG, "ERROR: BluetoothManager couldn't open a gatt server.");
+        	mBtConnMngr.sendMessage(Events.GATT_SERVER_FAILED);
+        	return;
+        }
+        
         BluetoothGattService service = new BluetoothGattService(OnboardingGattService.SERVICE_UUID, BluetoothGattService.SERVICE_TYPE_PRIMARY);
-        for (BluetoothGattCharacteristic c : generateCharacteristics() )
-        	service.addCharacteristic(c);
-        boolean serviceAdded = mGattServer.addService(service);
-        Log.d(TAG, "was mGattServer.addService(service) successful? %b", serviceAdded);
+        for (BluetoothGattCharacteristic c : generateCharacteristics() ) {
+        	if( !service.addCharacteristic(c) ) {
+        		Log.e(TAG, "ERROR: characteristic (%s) couln't be added to the service.", c.getUuid());
+        		mBtConnMngr.sendMessage(Events.GATT_SERVER_FAILED);
+        		return;
+        	}
+        }
+
+        if ( !mGattServer.addService(service) ) {
+        	Log.e(TAG, "ERROR: service was not added succesfully.");
+        	mBtConnMngr.sendMessage(Events.GATT_SERVER_FAILED);
+        }
+	}
+	
+	public void stopGattServer() {
+		if(mGattServer != null) {
+			mGattServer.close();
+			mGattServer = null;
+		}
 	}
 
 	private BluetoothGattCharacteristic[] generateCharacteristics() {
@@ -321,12 +276,6 @@ public class BleProvisioner {
 		return characs;
 	}
 
-	public void stopGattServer() {
-		mGattServer.clearServices();
-		mGattServer.close();
-		mGattServer = null;
-	}
-	
 	protected BluetoothGattCharacteristic getCharacteristicFromUUID(
 			final UUID characteristicUUID) {
 		
