@@ -1,6 +1,7 @@
 package com.cozybit.onbordee.ble;
 
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.content.IntentFilter;
 
@@ -13,7 +14,7 @@ import com.cozybit.onbordee.utils.Log;
 public class BtConnectionManager implements IBtConnectionManager {
 
 	private static String TAG = BtConnectionManager.class.getName();
-	
+
 	enum States {
 		OFF,
 		BOOTING,
@@ -32,8 +33,8 @@ public class BtConnectionManager implements IBtConnectionManager {
 		GATT_SERVER_FAILED,
 		BOOT_ERROR,
 		CLIENT_CONNECTED,
-		INVALID_CLIENT,
 		CLIENT_VALID,
+		CLIENT_INVALID,
 		CLIENT_DISCONNECTED,
 		RECEIVED_DATA,
 		SHUT_DOWN
@@ -54,9 +55,11 @@ public class BtConnectionManager implements IBtConnectionManager {
 	private HandlerThread mHandlerThread;
 	private Handler mHandler;
 	private Message mLastMessage; 
-	
+
+	private final int RSSI_TH = 55;
 	private BleProvisioner mBleProvisioner;
 	private BtBroadcastReceiver mBroadcastReciver;
+	private BluetoothDevice mBtClient;
 	
 	public BtConnectionManager(Context context) {
 		mContext = context;
@@ -83,7 +86,7 @@ public class BtConnectionManager implements IBtConnectionManager {
 	public void init() {
 		if( mState == States.OFF ) {
 			mContext.registerReceiver(mBroadcastReciver, mIntentFilter);
-			mBleProvisioner.setup();
+			mBleProvisioner.initBtIface();
 		}
 	}
 	
@@ -152,24 +155,49 @@ public class BtConnectionManager implements IBtConnectionManager {
 			} else if ( event == Events.GATT_SERVER_FAILED || event == Events.BLUETOOTH_OFF) {
 				updateState(States.FAILED);
 			}
-			
 			break;
 			
 		case WAITING_4_CLIENT:
+			
+			if( event == Events.CLIENT_CONNECTED ) {
+				mBtClient = (BluetoothDevice) msg.obj;
+				updateState(States.VALIDATING_CLIENT);
+				//it is impossible for the GattServer to get any information about the
+				//rssi of the client. As consequence of this, validation can't be done. Let's
+				//fake it.
+				sendMessage(Events.CLIENT_VALID);
+			}
 			break;
 			
 		case VALIDATING_CLIENT:
+			
+			if( event == Events.CLIENT_VALID) {
+				
+				updateState(States.CLIENT_CONNECTED);
+			} else if ( event == Events.CLIENT_INVALID) {
+				
+				//disconnect the invalid client & wait for confirmation
+				mBleProvisioner.disconnectBtClient(mBtClient);
+			} else if ( event == Events.CLIENT_DISCONNECTED) {
+
+				mBtClient = null;
+				updateState(States.WAITING_4_CLIENT);
+			}
 			break;
 			
 		case CLIENT_CONNECTED:
+			
+			if( event == Events.RECEIVED_DATA ) {
+				
+			} else if ( event == Events.CLIENT_DISCONNECTED) {
+				mBtClient = null;
+				updateState(States.WAITING_4_CLIENT);
+			}
+			
 			break;
 			
 		case FAILED:
 			break;
-			
-		default:
-			break;
-			
 		}
 		
         if( event == Events.SHUT_DOWN && mState != States.OFF ) {
@@ -193,7 +221,7 @@ public class BtConnectionManager implements IBtConnectionManager {
 	}
 	
 	private void resetStateMachineVars() {
-		//NOTHING TO DO YET
+		mBtClient = null;
 	}
 
 }

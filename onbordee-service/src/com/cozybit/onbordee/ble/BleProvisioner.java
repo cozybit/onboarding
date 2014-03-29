@@ -18,6 +18,7 @@ import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.os.Message;
 
 public class BleProvisioner {
 
@@ -117,14 +118,23 @@ public class BleProvisioner {
 		public void onConnectionStateChange(BluetoothDevice device, int status, int newState) {
 			Log.d(TAG, "Device: %s | Status: %d | newSate: %d", device.getAddress(), status, newState);
 			
+			Message msg = Message.obtain();
+			
 			switch(newState) {
 			case BluetoothProfile.STATE_CONNECTED:
+				msg.what = Events.CLIENT_CONNECTED.ordinal();
+				msg.obj = device;
 				break;
 			case BluetoothProfile.STATE_DISCONNECTED:
+				msg.what = Events.CLIENT_DISCONNECTED.ordinal();
+				msg.obj = device;
 				break;
 			default:
 				break;
+				
 			}
+			
+			mBtConnMngr.sendMessage(msg);
 		}
     	
     	//Execute all pending write operations for this device.
@@ -149,9 +159,7 @@ public class BleProvisioner {
 		mBtConnMngr = conMngr;
 	}
 	
-	/*TODO If Bluetooth is not enabled when the service is started, there will be a race 
-	 * condition (BT needs some ms to be loaded) and there will be NPE when starting the service*/
-	public void setup() {
+	public void initBtIface() {
 		
 		if (mContext == null) {
 			Log.e(TAG,"ERROR: context not available.");
@@ -206,8 +214,8 @@ public class BleProvisioner {
         	mBtConnMngr.sendMessage(Events.GATT_SERVER_FAILED);
         	return;
         }
-        
-        BluetoothGattService service = new BluetoothGattService(OnboardingGattService.SERVICE_UUID, BluetoothGattService.SERVICE_TYPE_PRIMARY);
+
+        BluetoothGattService service = new BluetoothGattService(OnboardingGattService.SERVICE_UUID, BluetoothGattService.SERVICE_TYPE_PRIMARY);        
         for (BluetoothGattCharacteristic c : generateCharacteristics() ) {
         	if( !service.addCharacteristic(c) ) {
         		Log.e(TAG, "ERROR: characteristic (%s) couln't be added to the service.", c.getUuid());
@@ -226,6 +234,12 @@ public class BleProvisioner {
 		if(mGattServer != null) {
 			mGattServer.close();
 			mGattServer = null;
+		}
+	}
+	
+	public void disconnectBtClient(BluetoothDevice device) {
+		if(mGattServer != null) {
+			mGattServer.cancelConnection(device);
 		}
 	}
 
@@ -275,7 +289,7 @@ public class BleProvisioner {
 		
 		return characs;
 	}
-
+	
 	protected BluetoothGattCharacteristic getCharacteristicFromUUID(
 			final UUID characteristicUUID) {
 		
