@@ -19,15 +19,15 @@ public class OnboardeeActivity extends Activity {
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
-		
+
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_onboardee);
-		
+
 		mStartServiceButton = (Button) findViewById(R.id.startServiceButton);
 		mStopServiceButton = (Button) findViewById(R.id.stopServiceButton);
-		
+
 		mServiceIntent = new Intent(getApplicationContext(), OnboardeeService.class);
-		
+
 		mStartServiceButton.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
