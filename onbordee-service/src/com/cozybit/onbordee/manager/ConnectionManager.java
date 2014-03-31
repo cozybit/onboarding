@@ -1,4 +1,4 @@
-package com.cozybit.onbordee.ble;
+package com.cozybit.onbordee.manager;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -9,11 +9,15 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
 import android.os.Process;
+
+import com.cozybit.onbordee.ble.BleProvisioner;
+import com.cozybit.onbordee.ble.BtBroadcastReceiver;
+import com.cozybit.onbordee.manager.ConnectionManager.DataReceivedCallback.DataTypes;
 import com.cozybit.onbordee.utils.Log;
 
-public class BtConnectionManager implements IBtConnectionManager {
+public class ConnectionManager implements IManager {
 
-	private static String TAG = BtConnectionManager.class.getName();
+	private static String TAG = ConnectionManager.class.getName();
 
 	enum States {
 		OFF,
@@ -24,7 +28,7 @@ public class BtConnectionManager implements IBtConnectionManager {
 		FAILED
 	}
 	
-	enum Events {
+	public enum Events {
 		INIT,
 		INIT_ERROR,
 		BLUETOOTH_ON,
@@ -40,7 +44,7 @@ public class BtConnectionManager implements IBtConnectionManager {
 		SHUT_DOWN
 	}
 	
-	enum SubEvents {
+	public enum SubEvents {
 		DEFAULT,
 		NO_BT_AVAILABLE,
 		NO_BLE_AVAILABLE,
@@ -61,7 +65,15 @@ public class BtConnectionManager implements IBtConnectionManager {
 	private BtBroadcastReceiver mBroadcastReciver;
 	private BluetoothDevice mBtClient;
 	
-	public BtConnectionManager(Context context) {
+	private DataReceivedCallback mDataCallback;
+	
+	public interface DataReceivedCallback {
+		
+		public enum DataTypes { CMD, SSID, AUTH, PASS, CHANNEL };
+		public void onDataReceived(DataTypes type, byte[] data);
+	};
+	
+	public ConnectionManager(Context context) {
 		mContext = context;
 		mBleProvisioner = new BleProvisioner(mContext, this);
 		mState = States.OFF;
@@ -82,6 +94,10 @@ public class BtConnectionManager implements IBtConnectionManager {
 			}
 		});
 	}
+	
+	public void setDataReceivedCallback(DataReceivedCallback callback) {
+		mDataCallback = callback;
+	}
 
 	public void init() {
 		if( mState == States.OFF ) {
@@ -98,22 +114,21 @@ public class BtConnectionManager implements IBtConnectionManager {
 	public void shutDown() {
 		processMessage(Message.obtain(null, Events.SHUT_DOWN.ordinal()));
 	}
-	
-	// Implement the IBtConnectionManager interface
-	
+
 	@Override
 	public void sendMessage(Message msg) {
-		mHandler.dispatchMessage(msg);
+		if (mHandler != null)
+			mHandler.dispatchMessage(msg);
 	}
-	
+
 	@Override
-	public void sendMessage(Events event) {
+	public void sendMessage(Enum event) {
 		if( mHandler != null && !mHandler.sendEmptyMessage(event.ordinal()) )
 			Log.e(TAG, "Cant not send message (%s) to handler", event);
 	}
-	
+
 	@Override
-	public void sendMessage(Events event, SubEvents reason) {
+	public void sendMessage(Enum event, Enum reason) {
 		if(mHandler != null) {
 			Message msg = mHandler.obtainMessage();
 			msg.what = event.ordinal();
@@ -121,7 +136,7 @@ public class BtConnectionManager implements IBtConnectionManager {
 			msg.sendToTarget();
 		}
 	}
-	
+
     /*------------------------
      * Start of State Machine
      *------------------------*/
@@ -143,7 +158,6 @@ public class BtConnectionManager implements IBtConnectionManager {
 		        updateState(States.BOOTING);
 			else if( event == Events.INIT_ERROR )
 				updateState(States.FAILED);
-			
 			break;
 		
 		case BOOTING:
@@ -188,12 +202,13 @@ public class BtConnectionManager implements IBtConnectionManager {
 		case CLIENT_CONNECTED:
 			
 			if( event == Events.RECEIVED_DATA ) {
-				
+				DataTypes type = DataTypes.values()[msg.arg1];
+				byte[] value = (byte[]) msg.obj;
+				mDataCallback.onDataReceived(type, value);
 			} else if ( event == Events.CLIENT_DISCONNECTED) {
 				mBtClient = null;
 				updateState(States.WAITING_4_CLIENT);
 			}
-			
 			break;
 			
 		case FAILED:
@@ -205,6 +220,8 @@ public class BtConnectionManager implements IBtConnectionManager {
         	mBleProvisioner.tearDown();
         	resetStateMachineVars();
         	mContext.unregisterReceiver(mBroadcastReciver);
+        } else if ( event == Events.BLUETOOTH_OFF && mState != States.OFF ) {
+        	updateState(States.FAILED);
         }
 		
 		Log.d(TAG, "END: Event: %s; Subevent: %s; Transition: %s -> %s", event, subEvent, beforeEventState, mState );

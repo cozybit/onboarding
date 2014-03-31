@@ -3,8 +3,11 @@ package com.cozybit.onbordee.ble;
 import java.util.Arrays;
 import java.util.UUID;
 
-import com.cozybit.onbordee.ble.BtConnectionManager.Events;
-import com.cozybit.onbordee.ble.BtConnectionManager.SubEvents;
+import com.cozybit.onbordee.manager.ConnectionManager.DataReceivedCallback.DataTypes;
+import com.cozybit.onbordee.manager.ConnectionManager.Events;
+import com.cozybit.onbordee.manager.ConnectionManager.SubEvents;
+import com.cozybit.onbordee.manager.IManager;
+
 import com.cozybit.onbordee.utils.Log;
 
 import android.bluetooth.BluetoothAdapter;
@@ -25,7 +28,7 @@ public class BleProvisioner {
 	private String TAG = BleProvisioner.class.getName();
 	
 	private Context mContext;
-	private IBtConnectionManager mBtConnMngr;
+	private IManager mManager;
 	
 	private boolean mBtInitState;
 	private BluetoothManager mBluetoothManager;
@@ -82,10 +85,6 @@ public class BleProvisioner {
     			}
     			
     			mGattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, value);
-    			 
-    		    /*mGattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, new byte[] { bogusValue++ });
-    		    if(mWelcomeFragUiUpdater != null)
-    		    	mWelcomeFragUiUpdater.updateValue(bogusValue);*/
     		 }
     	}
     	
@@ -96,21 +95,27 @@ public class BleProvisioner {
     			boolean responseNeeded, int offset, byte[] value) {
     		Log.d(TAG, "UUID: %s, Value: %s", characteristic.getUuid(), Arrays.toString(value) );
 
-	   		 if (mGattServer != null) {
-	   			UUID uuid = characteristic.getUuid();
+    		Message msg = Message.obtain();
+    		msg.what = Events.RECEIVED_DATA.ordinal();
+    		msg.obj = value;
     		
-	    		if( uuid.equals(OnboardingGattService.CHARACTERISTIC_SSID) ||
-	    				uuid.equals(OnboardingGattService.CHARACTERISTIC_AUTH) ||
-	    				uuid.equals(OnboardingGattService.CHARACTERISTIC_PASS) ||
-	    				uuid.equals(OnboardingGattService.CHARACTERISTIC_CHANNEL) ) {
-				} else if( uuid.equals(OnboardingGattService.CHARACTERISTIC_COMMAND) ) {
-					
-				} else {
-					Log.d(TAG, "Unknown characteristic! --> uuid: " + uuid.toString() );
-				}
-	    		
-	    		mGattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, value);
-	   		 }
+   			UUID uuid = characteristic.getUuid();
+		
+    		if( uuid.equals(OnboardingGattService.CHARACTERISTIC_SSID) ) {
+    			msg.arg1 = DataTypes.SSID.ordinal();
+    		} else if ( uuid.equals(OnboardingGattService.CHARACTERISTIC_AUTH) ) {
+    			msg.arg1 = DataTypes.AUTH.ordinal();
+    		} else if ( uuid.equals(OnboardingGattService.CHARACTERISTIC_PASS) ) { 
+    			msg.arg1 = DataTypes.PASS.ordinal();
+    		} else if ( uuid.equals(OnboardingGattService.CHARACTERISTIC_CHANNEL) ) {
+    			msg.arg1 = DataTypes.CHANNEL.ordinal();
+			} else if( uuid.equals(OnboardingGattService.CHARACTERISTIC_COMMAND) ) {
+				msg.arg1 = DataTypes.CMD.ordinal();
+			} else
+				Log.d(TAG, "Unknown characteristic! --> uuid: " + uuid.toString() );
+    		
+    		mManager.sendMessage(msg);
+    		mGattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, value);
     	}
     	
 		//Callback indicating when a remote device has been connected or disconnected.
@@ -131,10 +136,9 @@ public class BleProvisioner {
 				break;
 			default:
 				break;
-				
 			}
 			
-			mBtConnMngr.sendMessage(msg);
+			mManager.sendMessage(msg);
 		}
     	
     	//Execute all pending write operations for this device.
@@ -147,23 +151,23 @@ public class BleProvisioner {
     	@Override
     	public void onServiceAdded(int status, BluetoothGattService service) {
    		 	Log.d(TAG, "Status: %d Service (UUID): %s", status, service.getUuid() );
-   		 	mBtConnMngr.sendMessage(Events.GATT_SERVER_DEPLOYED);
+   		 	mManager.sendMessage(Events.GATT_SERVER_DEPLOYED);
     	}
     	
 	};
 	
 
 	// Constructor
-	public BleProvisioner(Context context, IBtConnectionManager conMngr) {
+	public BleProvisioner(Context context, IManager conMngr) {
 		mContext = context;
-		mBtConnMngr = conMngr;
+		mManager = conMngr;
 	}
 	
 	public void initBtIface() {
 		
 		if (mContext == null) {
 			Log.e(TAG,"ERROR: context not available.");
-			mBtConnMngr.sendMessage(Events.INIT_ERROR);
+			mManager.sendMessage(Events.INIT_ERROR);
 			return;
 		}
 		
@@ -173,7 +177,7 @@ public class BleProvisioner {
         // check for Bluetooth support
         if ( mBluetoothAdapter == null) {
         	Log.e(TAG, "ERROR: this android device has no Bluetooth support.");
-        	mBtConnMngr.sendMessage(Events.INIT_ERROR, SubEvents.NO_BLE_AVAILABLE);
+        	mManager.sendMessage(Events.INIT_ERROR, SubEvents.NO_BLE_AVAILABLE);
         	return;
         } /*else if ( mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE) ) {
         	// N5, MK908 seems to not have BLE enabled as featurecheck for BLE support.
@@ -181,14 +185,14 @@ public class BleProvisioner {
         	mBtConMngr.sendMessage(Events.INIT_ERROR, SubEvents.NO_BLE_AVAILABLE);
         	return;
         }*/ else {
-            if( mBluetoothAdapter.isEnabled() ) {
-            	mBtConnMngr.sendMessage(Events.INIT);
-            	mBtConnMngr.sendMessage(Events.BLUETOOTH_ON);
+            if( mBtInitState = mBluetoothAdapter.isEnabled() ) {
+            	mManager.sendMessage(Events.INIT);
+            	mManager.sendMessage(Events.BLUETOOTH_ON);
             } else {
             	if( mBluetoothAdapter.enable() )
-            		mBtConnMngr.sendMessage(Events.INIT);
+            		mManager.sendMessage(Events.INIT);
             	else
-        			mBtConnMngr.sendMessage(Events.INIT_ERROR, SubEvents.BT_BROKEN);
+        			mManager.sendMessage(Events.INIT_ERROR, SubEvents.BT_BROKEN);
             }
         }
 	}
@@ -196,7 +200,7 @@ public class BleProvisioner {
 	public void tearDown() {
 		stopGattServer();
 		//leave BT as in its initial state
-		if( !mBtInitState )
+		if( mBluetoothAdapter!= null && !mBtInitState )
 			mBluetoothAdapter.disable();
 	}
 	
@@ -211,7 +215,7 @@ public class BleProvisioner {
         mGattServer = mBluetoothManager.openGattServer(mContext, mBtGattServerCbk);
         if(mGattServer == null) {
         	Log.e(TAG, "ERROR: BluetoothManager couldn't open a gatt server.");
-        	mBtConnMngr.sendMessage(Events.GATT_SERVER_FAILED);
+        	mManager.sendMessage(Events.GATT_SERVER_FAILED);
         	return;
         }
 
@@ -219,14 +223,14 @@ public class BleProvisioner {
         for (BluetoothGattCharacteristic c : generateCharacteristics() ) {
         	if( !service.addCharacteristic(c) ) {
         		Log.e(TAG, "ERROR: characteristic (%s) couln't be added to the service.", c.getUuid());
-        		mBtConnMngr.sendMessage(Events.GATT_SERVER_FAILED);
+        		mManager.sendMessage(Events.GATT_SERVER_FAILED);
         		return;
         	}
         }
 
         if ( !mGattServer.addService(service) ) {
         	Log.e(TAG, "ERROR: service was not added succesfully.");
-        	mBtConnMngr.sendMessage(Events.GATT_SERVER_FAILED);
+        	mManager.sendMessage(Events.GATT_SERVER_FAILED);
         }
 	}
 	

@@ -3,7 +3,8 @@ package com.cozybit.onbordee.ble;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.cozybit.onbordee.ble.BtConnectionManager.Events;
+import com.cozybit.onbordee.manager.IManager;
+import com.cozybit.onbordee.manager.ConnectionManager.Events;
 import com.cozybit.onbordee.utils.Log;
 
 import android.bluetooth.BluetoothAdapter;
@@ -14,9 +15,9 @@ import android.content.Intent;
 public class BtBroadcastReceiver extends BroadcastReceiver {
 
 	private static final String TAG = BtBroadcastReceiver.class.getName();
-	private IBtConnectionManager mBtConnMngr;
+	private IManager mBtConnMngr;
 	
-	public BtBroadcastReceiver(IBtConnectionManager manager) {
+	public BtBroadcastReceiver(IManager manager) {
 		mBtConnMngr = manager;
 	}
 	
