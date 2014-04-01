@@ -3,11 +3,12 @@ package com.cozybit.onbordee.wifi;
 import java.util.List;
 
 import com.cozybit.onbordee.utils.Log;
-import com.cozybit.onbordee.wifi.WifiProvisioner.WifiProvisionerCallback.FailureReason;
-import com.cozybit.onbordee.wifi.WifiProvisioner.WifiProvisionerCallback.WifiIfaceStatus;
+import com.cozybit.onbordee.wifi.WifiProvisioner.WifiProvisionerCallback.WifiIfaceState;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.net.NetworkInfo.DetailedState;
+import android.net.wifi.SupplicantState;
 import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiManager;
 
@@ -16,22 +17,19 @@ public class WifiProvisioner {
 	private final static String TAG = WifiProvisioner.class.getName();
 
 	public interface WifiProvisionerCallback {
-
-		enum WifiIfaceStatus { OFF, ENABLING, ON, DISABLING, FAILED };
-		enum WifiNetworkStatus { ASSOCIATING, AUTHENTICATING, OBTAINING_IPADDR, CONNECTED, DISCONNECTED, FAILED };
-		public enum FailureReason { UNKNOWN, NO_CONTEXT, NO_WIFI_AVAILABLE };
-
-		public void onWifiIfaceStatus(WifiIfaceStatus status);
-		public void onWifiNetworkStatus(WifiNetworkStatus status);
-		public void onFailure(FailureReason error);
+		
+		public enum WifiIfaceState { WIFI_DISABLING, WIFI_OFF, WIFI_ENABLING, WIFI_ON, WIFI_FAILED, NO_WIFI };
+		
+		public void onWifiIfaceStatus(WifiIfaceState state);
+		public void onWifiLinkStatus(SupplicantState state);
+		public void onWifiNetworkStatus(DetailedState state);
 	}
 
 	private Context mContext;
 	private WifiProvisionerCallback mCallback;
 	private WifiBroadcastReceiver mBroadcastReceiver;
 	private WifiManager mWifiManager;
-	private boolean mWifiInitState;
-	private boolean mIsInitiated = false;
+	private boolean mProvisionerInitiated = false;
 
 	public WifiProvisioner(Context context, WifiProvisionerCallback callback) {
 		mContext = context;
@@ -40,30 +38,21 @@ public class WifiProvisioner {
 	
 	public void init() {
 		
-		if( !mIsInitiated ) {
-			if (mContext == null) {
-				Log.e(TAG,"ERROR: context not available.");
-				if(mCallback != null) mCallback.onFailure(FailureReason.NO_CONTEXT);
-				return;
-			} else {
-				mBroadcastReceiver = new WifiBroadcastReceiver(mContext, mCallback);
-				mBroadcastReceiver.init();
-				initIface();
-				mIsInitiated = true;
-			}
+		if( !mProvisionerInitiated ) {
+			mBroadcastReceiver = new WifiBroadcastReceiver(mContext, mCallback);
+			mBroadcastReceiver.init();
+			initIface();
+			mProvisionerInitiated = true;
 		}
 	}
 	
-	public void tearDown() {
+	public void stop() {
 		
-		if( mIsInitiated ) {
-			if( mWifiManager != null && !mWifiInitState ) {
-				WifiIfaceStatus status = mWifiManager.setWifiEnabled(false) ? WifiIfaceStatus.DISABLING:WifiIfaceStatus.FAILED;
-				if(mCallback != null) mCallback.onWifiIfaceStatus(status);
-			}
+		if( mProvisionerInitiated ) {
+			tearDownIface();
 			mBroadcastReceiver.stop();
-			mIsInitiated = false;
-		}
+			mProvisionerInitiated = false;
+		}	
 	}
 
 	private void initIface() {
@@ -74,20 +63,29 @@ public class WifiProvisioner {
 			if(mCallback != null) mCallback.onFailure(FailureReason.NO_WIFI_AVAILABLE);
 			return;
 		}*/
-		
+
 		mWifiManager = (WifiManager) mContext.getSystemService(Context.WIFI_SERVICE);
-		
-	    if ( mWifiInitState = mWifiManager.isWifiEnabled() ) {
+
+	    if ( mWifiManager.isWifiEnabled() ) {
 	    	if(mCallback != null) {
-	    		mCallback.onWifiIfaceStatus(WifiIfaceStatus.ENABLING);
-	    		mCallback.onWifiIfaceStatus(WifiIfaceStatus.ON);
+	    		mCallback.onWifiIfaceStatus(WifiIfaceState.WIFI_ENABLING);
+	    		mCallback.onWifiIfaceStatus(WifiIfaceState.WIFI_ON);
 	    	}
 	    } else {
-	    	if( mWifiManager.setWifiEnabled(true) )
-	    		if(mCallback != null) mCallback.onWifiIfaceStatus(WifiIfaceStatus.ENABLING);
+	    	/*if( mWifiManager.setWifiEnabled(true) )
+	    		if(mCallback != null) mCallback.onWifiIfaceStatus(WifiIfaceState.ENABLING);
 	    	else
-	    		if(mCallback != null) mCallback.onWifiIfaceStatus(WifiIfaceStatus.FAILED);
+	    		if(mCallback != null) mCallback.onWifiIfaceStatus(WifiIfaceState.FAILED);*/
+	    	if( !mWifiManager.setWifiEnabled(true) )
+    			if(mCallback != null) mCallback.onWifiIfaceStatus(WifiIfaceState.WIFI_FAILED);
 	    }
+	}
+	
+	private void tearDownIface() {
+		if( mWifiManager != null && mWifiManager.isWifiEnabled() ) { 
+			if( !mWifiManager.setWifiEnabled(false) )
+				if(mCallback != null) mCallback.onWifiIfaceStatus(WifiIfaceState.WIFI_FAILED);
+		}
 	}
 	
     public void flushAllConfiguredNetworks() {
