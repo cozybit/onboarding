@@ -1,6 +1,7 @@
 package com.cozybit.onbordee.ble;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
 import com.cozybit.onbordee.manager.ConnectionManager.DataReceivedCallback.DataTypes;
@@ -31,13 +32,15 @@ public class BleProvisioner {
 	private IManager mManager;
 	
 	private boolean mBtInitState;
+	private BluetoothDevice mBtClientDev;
 	private BluetoothManager mBluetoothManager;
 	private BluetoothAdapter mBluetoothAdapter;
 	
 	private UUID mServiceUUID = OnboardingGattService.SERVICE_UUID;
 	
-    private BluetoothGatt mBluetoothGatt;
+    //private BluetoothGatt mBluetoothGatt;
     private BluetoothGattServer mGattServer;
+    private BluetoothGattService mGattService;
     private BleBlockingQueue mBleBlockingQueue;
     
 	private BluetoothGattServerCallback mBtGattServerCbk = new BluetoothGattServerCallback() {
@@ -195,6 +198,10 @@ public class BleProvisioner {
         			mManager.sendMessage(Events.INIT_ERROR, SubEvents.BT_BROKEN);
             }
         }
+        
+        // Create the Blocking Queue with it's own thread and start it.
+        mBleBlockingQueue = new BleBlockingQueue();
+        mBleBlockingQueue.start();
 	}
 
 	public void tearDown() {
@@ -219,16 +226,16 @@ public class BleProvisioner {
         	return;
         }
 
-        BluetoothGattService service = new BluetoothGattService(OnboardingGattService.SERVICE_UUID, BluetoothGattService.SERVICE_TYPE_PRIMARY);        
+        mGattService = new BluetoothGattService(OnboardingGattService.SERVICE_UUID, BluetoothGattService.SERVICE_TYPE_PRIMARY);        
         for (BluetoothGattCharacteristic c : generateCharacteristics() ) {
-        	if( !service.addCharacteristic(c) ) {
+        	if( !mGattService.addCharacteristic(c) ) {
         		Log.e(TAG, "ERROR: characteristic (%s) couln't be added to the service.", c.getUuid());
         		mManager.sendMessage(Events.GATT_SERVER_FAILED);
         		return;
         	}
         }
 
-        if ( !mGattServer.addService(service) ) {
+        if ( !mGattServer.addService(mGattService) ) {
         	Log.e(TAG, "ERROR: service was not added succesfully.");
         	mManager.sendMessage(Events.GATT_SERVER_FAILED);
         }
@@ -294,29 +301,21 @@ public class BleProvisioner {
 		return characs;
 	}
 	
-	protected BluetoothGattCharacteristic getCharacteristicFromUUID(
-			final UUID characteristicUUID) {
+	public void updateCharacteristic(final UUID characteristicUUID, final String value) {
 		
-		if (mBluetoothAdapter == null || mBluetoothGatt == null ||
-				mServiceUUID == null) {
-            Log.w(TAG, "BluetoothAdapter not initialized");
-            return null;
-        }
-        
-        BluetoothGattService gattService = mBluetoothGatt.getService(mServiceUUID);
-		
-  		if (gattService == null) {
-  			Log.w(TAG, "GATT Service not found for UUID: %s", mServiceUUID.toString());
-  			return null;
-  		}
-  		// Get Characteristic
-  		return gattService.getCharacteristic(characteristicUUID);
+		final BluetoothGattCharacteristic characteristic = mGattService.getCharacteristic(characteristicUUID);
+		characteristic.setValue(value);
+		List<BluetoothDevice> BtDevs = mBluetoothManager.getConnectedDevices(BluetoothProfile.GATT_SERVER);
+		if(BtDevs != null) {
+			for (BluetoothDevice bluetoothDevice : BtDevs)
+				mGattServer.notifyCharacteristicChanged(bluetoothDevice, characteristic, true);
+		}
 	}
-	
+
 	public void writeCharacteristic(final UUID characteristicUUID, final String value) {
-		
-		final BluetoothGattCharacteristic characteristic = getCharacteristicFromUUID(characteristicUUID);
-  		
+
+		final BluetoothGattCharacteristic characteristic = mGattService.getCharacteristic(characteristicUUID);
+
   		if (characteristic == null) {
   			Log.w(TAG, "Problem getting characteristic from UUID %s", characteristicUUID.toString());
   			return;
@@ -327,9 +326,11 @@ public class BleProvisioner {
   			public void run() {
   				
   				characteristic.setValue(value);
+  				mGattService.addCharacteristic(characteristic);
+  				//TODO If this is not enough...try readding the characteristic to the service! 
   				
-  		        if (!mBluetoothGatt.writeCharacteristic(characteristic))
-  					Log.w(TAG, "writeCharacteristic not possible for UUID %s", characteristicUUID.toString());
+  		        //if (!mBluetoothGatt.writeCharacteristic(characteristic))
+  				//	Log.w(TAG, "writeCharacteristic not possible for UUID %s", characteristicUUID.toString());
   			}
   		}, true);
         
@@ -337,7 +338,7 @@ public class BleProvisioner {
 	
 	public void writeCharacteristic(final UUID characteristicUUID, final byte[] value) {
         
-		final BluetoothGattCharacteristic characteristic = getCharacteristicFromUUID(characteristicUUID);
+		final BluetoothGattCharacteristic characteristic =  mGattService.getCharacteristic(characteristicUUID);
   		
   		if (characteristic == null) {
   			Log.w(TAG, "Problem getting characteristic from UUID %s", characteristicUUID.toString());
@@ -349,9 +350,9 @@ public class BleProvisioner {
   			public void run() {
   				
   				characteristic.setValue(value);
-  				
-  		        if (!mBluetoothGatt.writeCharacteristic(characteristic))
-  					Log.w(TAG, "writeCharacteristic not possible for UUID %s", characteristicUUID.toString());
+  				mGattService.addCharacteristic(characteristic);
+  		        /*if (!mBluetoothGatt.writeCharacteristic(characteristic))
+  					Log.w(TAG, "writeCharacteristic not possible for UUID %s", characteristicUUID.toString());*/
   			}
   		}, true);
         
@@ -404,37 +405,7 @@ public class BleProvisioner {
 				}
 			}
 		}, false);
-	}
-    
-	public void pause() {
-		mSavedState = mState;
-		mState = State.PAUSED;
-		// Here depending on the state where we're we should do different things...
-		// Stop Scanning
-		// Disconnect from Gatt Server
-		if (mSavedState == State.SCANNING) {
-			stopScanLeDevices();
-		} else if (mSavedState == State.CONNECTED ||
-				   mSavedState ==State.CONNECTING) {
-			disconnectGatt();
-		}
-
-	}
-
-	public void resume() {
-		if (mState == State.PAUSED) {
-			
-			// Then here we need to recover and get to the state were we were before
-			// Start Scan again if scanning
-			// Connect to GATT Server if connected
-			
-			if (mSavedState == State.SCANNING) {
-				startScanLeDevices();
-			} else if (mSavedState == State.CONNECTED  ||
-					   mSavedState ==  State.CONNECTING) {
-				connectGatt();
-			}
-			mSavedState = null;
-		}
 	}*/
+
+
 }

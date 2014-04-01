@@ -98,6 +98,10 @@ public class ConnectionManager implements IManager {
 	public void setDataReceivedCallback(DataReceivedCallback callback) {
 		mDataCallback = callback;
 	}
+	
+	public BleProvisioner getBleProvisioner() {
+		return mBleProvisioner;
+	}
 
 	public void init() {
 		if( mState == States.OFF ) {
