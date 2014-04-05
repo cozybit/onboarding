@@ -1,8 +1,5 @@
 package com.cozybit.onbordee.ble;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import com.cozybit.onbordee.manager.IManager;
 import com.cozybit.onbordee.manager.ConnectionManager.Events;
 import com.cozybit.onbordee.utils.Log;
@@ -11,6 +8,7 @@ import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.util.SparseArray;
 
 public class BtBroadcastReceiver extends BroadcastReceiver {
 
@@ -30,7 +28,7 @@ public class BtBroadcastReceiver extends BroadcastReceiver {
 		STATE_TURNING_OFF(13);
 		
 		public final int code;
-		private static Map<Integer, BtStates> map = new HashMap<Integer, BtStates>();
+		private static SparseArray<BtStates> map = new SparseArray<BtStates>();
 		
 	    static {
 	        for (BtStates state : BtStates.values())
@@ -54,12 +52,12 @@ public class BtBroadcastReceiver extends BroadcastReceiver {
 			Log.d(TAG, "BT State transition: %s -> %s", previousState, state);
 			switch(state) {
 			case STATE_OFF:
-				mBtConnMngr.sendMessage(Events.BLUETOOTH_OFF);
+				mBtConnMngr.sendMessage(Events.BT_OFF);
 				break;
 			case STATE_TURNING_OFF:
 				break;
 			case STATE_ON:
-				mBtConnMngr.sendMessage(Events.BLUETOOTH_ON);
+				mBtConnMngr.sendMessage(Events.BT_ON);
 				break;
 			case STATE_TURNING_ON:
 				break; 
