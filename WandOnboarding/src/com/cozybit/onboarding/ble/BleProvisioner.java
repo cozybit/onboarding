@@ -18,11 +18,15 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Handler;
 import android.os.Message;
-import android.util.Log;
 import android.widget.Toast;
 
 import com.cozybit.onboarding.R;
 import com.cozybit.onboarding.app.OnboardingActivity;
+import com.cozybit.onboarding.profile.OnboardingProfile;
+import com.cozybit.onboarding.profile.OnboardingProfile.Characteristics;
+import com.cozybit.onboarding.utils.BluetoothConstants.BT_PROFILE_STATE;
+import com.cozybit.onboarding.utils.BluetoothConstants.GATT_STATUS;
+import com.cozybit.onboarding.utils.Log;
 
 public class BleProvisioner {
 
@@ -56,7 +60,10 @@ public class BleProvisioner {
 	private final BluetoothGattCallback mGattCallback = new BluetoothGattCallback() {
         @Override
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
-        	Log.d(TAG, "onConnectionStateChange() - status: " + status  + ", newState: " + newState);
+        	
+			GATT_STATUS gStatus = GATT_STATUS.valueOf(status);
+			BT_PROFILE_STATE pState = BT_PROFILE_STATE.valueOf(newState);
+			Log.d(TAG, "Status: %s | newSate: %s", gStatus, pState);
 
             if (newState == BluetoothProfile.STATE_CONNECTED) {
                 mState = State.CONNECTED;
@@ -77,71 +84,87 @@ public class BleProvisioner {
 
         @Override
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
-        	Log.d(TAG, "onServicesDiscovered() - status: " + status);        	
-            if (status == BluetoothGatt.GATT_SUCCESS) {
+        	
+			GATT_STATUS gStatus = GATT_STATUS.valueOf(status);
+        	Log.d(TAG, "Status: %s", gStatus);
+        	
+            if (gStatus == GATT_STATUS.SUCCESS) {
                 Log.w(TAG, "services discovered successfully: " + status);
-            	List<BluetoothGattService> services = gatt.getServices();
-            	if(services != null) {
-            		for (BluetoothGattService bluetoothGattService : services)
-    					Log.d(TAG, " - uuid: " + bluetoothGattService.getUuid().toString() );
-            	} else
-            		Log.d(TAG, "OPS!! No services available!!!");
-                mHandler.sendEmptyMessage(OnboardingActivity.GATT_SERVICES_DISCOVERED);
-            } else {
-                Log.w(TAG, "onServicesDiscovered received: " + status);
-            }
+                boolean hasOnboarding = false;
+            	for ( BluetoothGattService service : gatt.getServices() ) {
+            		hasOnboarding = service.getUuid().equals(OnboardingProfile.SERVICE_UUID);
+            		if( hasOnboarding )
+            			break;
+            	}
+            	
+            	if( hasOnboarding )
+            		mHandler.sendEmptyMessage(OnboardingActivity.GATT_SERVICES_DISCOVERED);
+            	else
+            		Log.e(TAG, "ERROR: the remote device doesn't have an Onboarding Service.");
+            	
+            } else
+            	Log.w(TAG, "WARNING: Status %s not handled", status);
         }
 
         @Override
-        public void onCharacteristicRead(BluetoothGatt gatt,
-                                         BluetoothGattCharacteristic characteristic,
-                                         int status) {
-            if (status == BluetoothGatt.GATT_SUCCESS) {
-            	 Log.d(TAG, "onCharacteristicRead received: " + status);
+        public void onCharacteristicRead(BluetoothGatt gatt, 
+        		BluetoothGattCharacteristic characteristic, int status) {
+        	
+        	Characteristics type = Characteristics.valueOf(characteristic.getUuid());
+        	GATT_STATUS gStatus = GATT_STATUS.valueOf(status);
+        	Log.d(TAG, "Charac. Type: %s; Status: %s; Value: %s", type, gStatus, Arrays.toString(characteristic.getValue()) );
+        	
+            if (gStatus == GATT_STATUS.SUCCESS) {
             	 mBleBlockingQueue.newResponse(characteristic);
-            	 
             	 final byte[] data = characteristic.getValue();
                  if (data != null && data.length > 0) {
-
-                 	String value = new String(data);
-            	 	
-     	       	 	if (characteristic.getUuid().equals(OnboardingGattService.CHARACTERISTIC_VENDOR_ID)) {
-     	       	 		mHandler.sendMessage(Message.obtain(mHandler, OnboardingActivity.VENDOR_ID_READ, value));
-     	       	 	} else if (characteristic.getUuid().equals(OnboardingGattService.CHARACTERISTIC_DEVICE_ID)) {
-     	       	 		mHandler.sendMessage(Message.obtain(mHandler, OnboardingActivity.DEVICE_ID_READ, value));
-     	       	 	}
+                 	if( type == Characteristics.VENDOR_ID )
+                 		mHandler.sendMessage( Message.obtain(mHandler, OnboardingActivity.VENDOR_ID_READ, new String(data)) );
+                 	else if( type == Characteristics.DEVICE_ID )
+                 		mHandler.sendMessage( Message.obtain(mHandler, OnboardingActivity.DEVICE_ID_READ, new String(data)) );
+                 	else if( type == Characteristics.STATUS )
+                 		mHandler.sendMessage( Message.obtain(mHandler, OnboardingActivity.STATUS_NOTIFIED, (int) data[0], 0) );
+                 	else if( type == Characteristics.LONG_STATUS )
+                 		mHandler.sendMessage( Message.obtain(mHandler, OnboardingActivity.LONG_STATUS_NOTIFIED, (int) data[0], 0) );
                  }
-            }
+            } else
+            	Log.w(TAG, "WARNING: Status %s not handled", status);
         }
 
         @Override
         public void onCharacteristicChanged(BluetoothGatt gatt,
                                             BluetoothGattCharacteristic characteristic) {
-       	 	Log.d(TAG, "onCharacteristicChanged received: " + new String(characteristic.getValue()));
+        	
+        	Characteristics type = Characteristics.valueOf(characteristic.getUuid());
+       	 	Log.d(TAG, "Charac. Type: %s; Value: %s", type, Arrays.toString(characteristic.getValue()));
+       	 	
        	 	// TODO notifications are not passed to the blocking queue
        	 	// mBleBlockingQueue.newResponse(characteristic);
+       	 	final byte[] data = characteristic.getValue();
        	 	
-            final byte[] data = characteristic.getValue();
             if (data != null && data.length > 0) {
-
-            	String value = new String(data);
-       	 	
-	       	 	if (characteristic.getUuid().equals(OnboardingGattService.CHARACTERISTIC_STATUS)) {
-	       	 		mHandler.sendMessage(Message.obtain(mHandler, OnboardingActivity.STATUS_NOTIFIED, value));
-	       	 	} else if (characteristic.getUuid().equals(OnboardingGattService.CHARACTERISTIC_LONG_STATUS)) {
-	       	 		mHandler.sendMessage(Message.obtain(mHandler, OnboardingActivity.LONG_STATUS_NOTIFIED, value));
-	       	 	}
+            	if( type == Characteristics.STATUS ) {
+            		mHandler.sendMessage(Message.obtain(mHandler, OnboardingActivity.STATUS_NOTIFIED, (int) data[0], 0));
+            	} else if( type == Characteristics.LONG_STATUS ) {
+            		mHandler.sendMessage(Message.obtain(mHandler, OnboardingActivity.LONG_STATUS_NOTIFIED, (int) data[0], 0));
+            	}
             }
         }
         
         @Override
-        public void onReadRemoteRssi(BluetoothGatt gatt, int rssi, int status) {
-        }
+        public void onReadRemoteRssi(BluetoothGatt gatt, int rssi, int status) { }
         
         @Override
         public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
-	       	 Log.d(TAG, "onCharacteristicWrite received: " + status);      
-        	 mBleBlockingQueue.newResponse(characteristic);
+        	
+        	Characteristics type = Characteristics.valueOf(characteristic.getUuid());
+        	GATT_STATUS gStatus = GATT_STATUS.valueOf(status);
+	       	Log.d(TAG, "Charac. Type: %s; Status: %s", type, gStatus);
+	       	
+	       	if( gStatus == GATT_STATUS.SUCCESS )
+	       		mBleBlockingQueue.newResponse(characteristic);
+	       	else
+	       		Log.w(TAG, "WARNING: status %s not handled!", gStatus);
         }
     };
 
@@ -435,6 +458,10 @@ public class BleProvisioner {
   			}
   		}, true);
         
+	}
+	
+	public void writeCharacteristic(final UUID characteristicUUID, final byte value) {
+		writeCharacteristic(characteristicUUID, new byte[]{ value } );
 	}
 	
 	public void writeCharacteristic(final UUID characteristicUUID, final byte[] value) {

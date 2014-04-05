@@ -3,6 +3,8 @@ package com.cozybit.onboarding.wifi;
 import java.lang.reflect.Method;
 import java.util.List;
 
+import com.cozybit.onboarding.utils.Log;
+
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -15,15 +17,14 @@ import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Handler;
-import android.util.Log;
-
 
 public class WiFiNetworkProvisioner implements INetworkProvisioner {
 
+	private final static String TAG = WiFiNetworkProvisioner.class.getName();
+
+	
 	private static final int MSEC_WAIT_FOR_SCAN_RESULT = 5000;
 	private static final int MAX_AUTH_ATTEMPTS = 2;
-
-	private final static String TAG = "WiFiNetworkProvisioner";
 
 	private Listener mProvisionerListener;
 	private Handler mHandler;
@@ -241,8 +242,7 @@ public class WiFiNetworkProvisioner implements INetworkProvisioner {
 	
 	
 	@Override
-	public boolean setWifiConfiguration(
-			WifiConfiguration configuration) {
+	public boolean setWifiConfiguration( WifiConfiguration configuration) {
 
 		// Store configuration as applied configuration
 		if (isProvisioned())
@@ -280,8 +280,6 @@ public class WiFiNetworkProvisioner implements INetworkProvisioner {
 		mConfiguration = null;
 	}
 
-
-	
 	private void disableWifi() {
 
 		unregisterBroadcastReceiver();
@@ -372,47 +370,17 @@ public class WiFiNetworkProvisioner implements INetworkProvisioner {
 	@Override
 	public boolean setWifiConfiguration(String SSID, String encryption, String password) {
 		
-		if (mState == State.CONNECTED && mWiFiNetwork != null && 
-			mWiFiNetwork.isSameConfig(SSID, encryption, password)) {
+		if ( mState == State.CONNECTED && mWiFiNetwork != null && 
+			mWiFiNetwork.isSameConfig(SSID, encryption, password) ) {
 			// Then ignore this as we're already connected to that network
 			mProvisionerListener.onConnected(mWiFiNetwork);
 			return true;
 		}
 		
-		mWiFiNetwork = new WiFiNetwork(SSID, encryption, password);
-		WifiConfiguration wc = new WifiConfiguration();
-		wc.SSID = SSID;
-		
-		if (encryption.equals("OPEN")) { // OPEN
-			wc.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE);
-		} else if (encryption.equals("WEP")) {
-			wc.hiddenSSID = true;
-			wc.status = WifiConfiguration.Status.DISABLED;     
-			wc.priority = 40;
-			wc.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE);
-			wc.allowedProtocols.set(WifiConfiguration.Protocol.RSN); 
-			wc.allowedProtocols.set(WifiConfiguration.Protocol.WPA);
-			wc.allowedAuthAlgorithms.set(WifiConfiguration.AuthAlgorithm.OPEN);
-			wc.allowedAuthAlgorithms.set(WifiConfiguration.AuthAlgorithm.SHARED);
-			wc.allowedPairwiseCiphers.set(WifiConfiguration.PairwiseCipher.CCMP);
-			wc.allowedPairwiseCiphers.set(WifiConfiguration.PairwiseCipher.TKIP);
-			wc.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.WEP40);
-			wc.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.WEP104);
-			wc.wepKeys[0] = "\"" + password + "\""; //This is the WEP Password
-			wc.wepTxKeyIndex = 0;
-		} else if (encryption.contains("WPA")) { // WPA
-			wc.preSharedKey = "\"" + password + "\"";
-			wc.status = WifiConfiguration.Status.ENABLED;
-			wc.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.TKIP);
-			wc.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.CCMP);
-			wc.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.WPA_PSK);
-			wc.allowedPairwiseCiphers.set(WifiConfiguration.PairwiseCipher.TKIP);
-			wc.allowedPairwiseCiphers.set(WifiConfiguration.PairwiseCipher.CCMP);
-			wc.allowedProtocols.set(WifiConfiguration.Protocol.RSN);
-		} else
-			return false;
-		
-		return setWifiConfiguration(wc);
+		WiFiNetwork.AUTH auth = WiFiNetwork.stringToAuth(encryption);
+		Log.d(TAG, "XXXXXXXX --> encryption is: %s; AUTH is %s", encryption, auth);
+		mWiFiNetwork = new WiFiNetwork(SSID, auth, password);
+		return setWifiConfiguration( mWiFiNetwork.toWifiConfiguration() );
 	}
 	
 	public WiFiNetwork getConnectedWifiNetwork() {

@@ -26,6 +26,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.cozybit.onboarding.R;
+import com.cozybit.onboarding.utils.Log;
 import com.cozybit.onboarding.wifi.INetworkProvisioner;
 import com.cozybit.onboarding.wifi.WiFiNetwork;
 import com.cozybit.onboarding.wifi.WiFiNetworkProvisioner;
@@ -33,6 +34,10 @@ import com.cozybit.onboarding.wifi.INetworkProvisioner.Listener;
 
 public class WiFiScannerActivity extends Activity {
 
+	private final static String TAG = WiFiScannerActivity.class.getName();
+	
+	private final static String PREFERENCES_NAME = "wifi_network";
+	
 	List<Map<String, String>> mWifiNetworksList;
 	private ListView mListView;
 	private SimpleAdapter mSimpleAdapter;
@@ -154,7 +159,10 @@ public class WiFiScannerActivity extends Activity {
 			@Override
 			public void onConnected(WiFiNetwork wifiNetwork) {
 				Toast.makeText(getBaseContext(), "Connected", Toast.LENGTH_SHORT).show();
-				storeWiFiNetwork(wifiNetwork);
+				// Here store this on the Application Shared Preferences
+				SharedPreferences prefs = WiFiScannerActivity.this.getSharedPreferences(PREFERENCES_NAME, MODE_PRIVATE);
+				if( !wifiNetwork.storeWiFiNetwork( prefs.edit() ) )
+					Log.e(TAG, "ERROR: network information couldn't be stored!!");
 				finish();
 			}
 
@@ -242,22 +250,5 @@ public class WiFiScannerActivity extends Activity {
 	            return "UNKNOWN";
 	        }
 	}
-	
-	private void storeWiFiNetwork(WiFiNetwork wifiNetwork) {
-		// Here store this on the Application Shared Preferences
-		SharedPreferences prefs = getSharedPreferences("wifi_network", MODE_PRIVATE);
-		SharedPreferences.Editor editor = prefs.edit();
-		editor.putString("SSID", wifiNetwork.SSID);
-		if (!wifiNetwork.authentication.equals("OPEN"))
-			editor.putString("authentication", "SECURE");
-		else
-			editor.putString("authentication", wifiNetwork.authentication);
-		editor.putString("password", wifiNetwork.password);
-		editor.putInt("networkId", wifiNetwork.networkId);
-		editor.commit();
-	}
-	
 
-	
-	
 }
