@@ -58,11 +58,11 @@ public class OnboardingProfile {
 
 
 
-	public static enum STATES {
+	public static enum States {
 		OFF, BOOTING, READY, CONNECTING, CONNECTED, FAILED
 	};
 
-	public enum EVENTS {
+	public enum Events {
 		//init & stop events
 		NONE(""), INIT("Initializing"),
 		SHUT_DOWN("Shutting Down"),
@@ -81,7 +81,7 @@ public class OnboardingProfile {
 		WIFI_LINK_DISCONNECTED("Wifi Link disconnected");
 		public final String msg;
 
-	    private EVENTS(String msg) {
+	    private Events(String msg) {
 	        this.msg = msg;
 	    }
 	}
@@ -91,12 +91,12 @@ public class OnboardingProfile {
 	 */
 
 	// Definition of the different COMMANDS methods
-	public static enum COMMANDS {
+	public static enum Commands {
 		CONNECT, DISCONNECT, RESET
 	};
 
 	// Definition of the different AUTH methods
-	public static enum AUTH { 
+	public static enum Auth { 
 		OPEN, WEP, WPA_PSK, UNKNOWN;
 	}
 }
