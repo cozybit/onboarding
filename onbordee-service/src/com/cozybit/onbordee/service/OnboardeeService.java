@@ -11,13 +11,13 @@ public class OnboardeeService extends Service{
 
 	private ConnectionManager mConnectionManager;
 	private OnboardingManager mOnboardingManager;
-	
-	
+
 	@Override
 	public void onCreate() {
 		mConnectionManager = new ConnectionManager(this);
 		mOnboardingManager = new OnboardingManager(this);
 		mConnectionManager.setDataReceivedCallback( mOnboardingManager.getDataReceivedCallback() );
+		mConnectionManager.setOnboardingManager( mOnboardingManager );
 		mOnboardingManager.setBleProvisioner( mConnectionManager.getBleProvisioner() );
 		
 		mConnectionManager.init();

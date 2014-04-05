@@ -5,6 +5,7 @@ import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.content.IntentFilter;
 
+import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
@@ -12,7 +13,8 @@ import android.os.Process;
 
 import com.cozybit.onbordee.ble.BleProvisioner;
 import com.cozybit.onbordee.ble.BtBroadcastReceiver;
-import com.cozybit.onbordee.manager.ConnectionManager.DataReceivedCallback.DataTypes;
+import com.cozybit.onbordee.profile.OnboardingProfile;
+import com.cozybit.onbordee.profile.OnboardingProfile.Characteristics;
 import com.cozybit.onbordee.utils.Log;
 
 public class ConnectionManager implements IManager {
@@ -20,35 +22,17 @@ public class ConnectionManager implements IManager {
 	private static String TAG = ConnectionManager.class.getName();
 
 	enum States {
-		OFF,
-		BOOTING,
-		WAITING_4_CLIENT,
-		VALIDATING_CLIENT,
-		CLIENT_CONNECTED,
-		FAILED
+		OFF, FAILED, BOOTING, 
+		WAITING_4_CLIENT, VALIDATING_CLIENT, CLIENT_CONNECTED 
 	}
 	
 	public enum Events {
-		INIT,
-		INIT_ERROR,
-		BLUETOOTH_ON,
-		BLUETOOTH_OFF,
-		GATT_SERVER_DEPLOYED,
-		GATT_SERVER_FAILED,
+		INIT, SHUT_DOWN,
+		BT_ON, BT_OFF, BT_BROKEN, NO_BT, NO_BLE, 
+		GATT_SERVER_DEPLOYED, GATT_SERVER_FAILED,
 		BOOT_ERROR,
-		CLIENT_CONNECTED,
-		CLIENT_VALID,
-		CLIENT_INVALID,
-		CLIENT_DISCONNECTED,
-		RECEIVED_DATA,
-		SHUT_DOWN
-	}
-	
-	public enum SubEvents {
-		DEFAULT,
-		NO_BT_AVAILABLE,
-		NO_BLE_AVAILABLE,
-		BT_BROKEN,
+		CLIENT_CONNECTED, CLIENT_VALID,	CLIENT_INVALID,	CLIENT_DISCONNECTED,
+		RECEIVED_DATA
 	}
 	
 	private Context mContext;
@@ -66,11 +50,10 @@ public class ConnectionManager implements IManager {
 	private BluetoothDevice mBtClient;
 	
 	private DataReceivedCallback mDataCallback;
+	private OnboardingManager mOnboardingManager;
 	
 	public interface DataReceivedCallback {
-		
-		public enum DataTypes { CMD, SSID, AUTH, PASS, CHANNEL };
-		public void onDataReceived(DataTypes type, byte[] data);
+		public void onDataReceived(OnboardingProfile.Characteristics type, byte[] data);
 	};
 	
 	public ConnectionManager(Context context) {
@@ -93,6 +76,10 @@ public class ConnectionManager implements IManager {
 				return false;
 			}
 		});
+	}
+	
+	public void setOnboardingManager(OnboardingManager onboardingManager) {
+		mOnboardingManager = onboardingManager;
 	}
 	
 	public void setDataReceivedCallback(DataReceivedCallback callback) {
@@ -152,25 +139,36 @@ public class ConnectionManager implements IManager {
 		//received message
 		mLastMessage = msg;
 		Events event = Events.values()[msg.what];
-		SubEvents subEvent = SubEvents.values()[msg.arg1];
-		Log.d(TAG, "START: Event: %s; Subevent: %s;", event, subEvent);
+		Log.d(TAG, "START: Event: %s", event);
 
 		switch(mState) {
 		case OFF:
 			
 			if( event == Events.INIT )
 		        updateState(States.BOOTING);
-			else if( event == Events.INIT_ERROR )
+			else if( event == Events.NO_BT || event == Events.NO_BLE || event == Events.BT_BROKEN )
 				updateState(States.FAILED);
 			break;
 		
 		case BOOTING:
 			
-			if( event == Events.BLUETOOTH_ON ) { 
+			if( event == Events.BT_ON ) { 
 				mBleProvisioner.deployGattServer();
 			} else if ( event == Events.GATT_SERVER_DEPLOYED ) {
+				// Update the value of the Characteristics
+				if( mOnboardingManager != null ) {
+					if( !mBleProvisioner.updateCharacteristic(Characteristics.DEVICE_ID.uuid, Build.PRODUCT, false) )
+						Log.e(TAG, "ERROR: BleProvisioner couldn't update %s", Characteristics.DEVICE_ID);
+					if( !mBleProvisioner.updateCharacteristic(Characteristics.VENDOR_ID.uuid, Build.MANUFACTURER, false) )
+						Log.e(TAG, "ERROR: BleProvisioner couldn't update %s", Characteristics.VENDOR_ID);
+					if( !mBleProvisioner.updateCharacteristic(Characteristics.STATUS.uuid, (byte) mOnboardingManager.getCurrentState().ordinal(), false) )
+						Log.e(TAG, "ERROR: BleProvisioner couldn't update %s", Characteristics.STATUS);
+					if( !mBleProvisioner.updateCharacteristic(Characteristics.LONG_STATUS.uuid, (byte) mOnboardingManager.getCurrentEvent().ordinal(), false) )
+						Log.e(TAG, "ERROR: BleProvisioner couldn't update %s", Characteristics.LONG_STATUS);
+				}
 				updateState(States.WAITING_4_CLIENT);
-			} else if ( event == Events.GATT_SERVER_FAILED || event == Events.BLUETOOTH_OFF) {
+				
+			} else if ( event == Events.GATT_SERVER_FAILED || event == Events.BT_OFF) {
 				updateState(States.FAILED);
 			}
 			break;
@@ -197,7 +195,6 @@ public class ConnectionManager implements IManager {
 				//disconnect the invalid client & wait for confirmation
 				mBleProvisioner.disconnectBtClient(mBtClient);
 			} else if ( event == Events.CLIENT_DISCONNECTED) {
-
 				mBtClient = null;
 				updateState(States.WAITING_4_CLIENT);
 			}
@@ -206,7 +203,7 @@ public class ConnectionManager implements IManager {
 		case CLIENT_CONNECTED:
 			
 			if( event == Events.RECEIVED_DATA ) {
-				DataTypes type = DataTypes.values()[msg.arg1];
+				OnboardingProfile.Characteristics type = OnboardingProfile.Characteristics.values()[msg.arg1];
 				byte[] value = (byte[]) msg.obj;
 				mDataCallback.onDataReceived(type, value);
 			} else if ( event == Events.CLIENT_DISCONNECTED) {
@@ -224,11 +221,11 @@ public class ConnectionManager implements IManager {
         	mBleProvisioner.tearDown();
         	resetStateMachineVars();
         	mContext.unregisterReceiver(mBroadcastReciver);
-        } else if ( event == Events.BLUETOOTH_OFF && mState != States.OFF ) {
+        } else if ( event == Events.BT_OFF && mState != States.OFF ) {
         	updateState(States.FAILED);
         }
 		
-		Log.d(TAG, "END: Event: %s; Subevent: %s; Transition: %s -> %s", event, subEvent, beforeEventState, mState );
+		Log.d(TAG, "END: Event: %s; Transition: %s -> %s", event, beforeEventState, mState );
 	}
 	
     /*------------------------
