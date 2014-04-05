@@ -16,10 +16,12 @@ public class WifiProvisioner {
 
 	private final static String TAG = WifiProvisioner.class.getName();
 
+	public static enum Authentication { OPEN, WEP, WPA_PSK, UNKNOWN; }
+
 	public interface WifiProvisionerCallback {
-		
+
 		public enum WifiIfaceState { WIFI_DISABLING, WIFI_OFF, WIFI_ENABLING, WIFI_ON, WIFI_FAILED, NO_WIFI };
-		
+
 		public void onWifiIfaceStatus(WifiIfaceState state);
 		public void onWifiLinkStatus(SupplicantState state);
 		public void onWifiNetworkStatus(DetailedState state);
@@ -35,9 +37,9 @@ public class WifiProvisioner {
 		mContext = context;
 		mCallback = callback;
 	}
-	
+
 	public void init() {
-		
+
 		if( !mProvisionerInitiated ) {
 			mBroadcastReceiver = new WifiBroadcastReceiver(mContext, mCallback);
 			mBroadcastReceiver.init();
@@ -45,7 +47,7 @@ public class WifiProvisioner {
 			mProvisionerInitiated = true;
 		}
 	}
-	
+
 	public void stop() {
 		
 		if( mProvisionerInitiated ) {
@@ -100,7 +102,7 @@ public class WifiProvisioner {
     }
 
     //Connect to a network. BSSID can be null if unknown
-    public boolean connectTo(String SSID, String BSSID, int channel, String auth, String password) {
+    public boolean connectTo(String SSID, String BSSID, int channel, Authentication auth, String password) {
     	
     	if(mWifiManager != null) {
 	    	WifiConfiguration config = generateWifiConfiguration(SSID, BSSID, auth, password);
@@ -116,15 +118,15 @@ public class WifiProvisioner {
     }
 
     //TODO: WEP and WPA PSK not supporte. Open and WPA2 PSK supported
-	private WifiConfiguration generateWifiConfiguration(String SSID, String BSSID, String auth, String password) {
+	private WifiConfiguration generateWifiConfiguration(String SSID, String BSSID, Authentication auth, String password) {
 		
 		WifiConfiguration config = new WifiConfiguration();
 		config.SSID = String.format("\"%s\"", SSID);
 		config.BSSID = BSSID;
 		config.status = WifiConfiguration.Status.ENABLED;
-		if ( auth.equals("none") ) { // PLAIN
+		if ( auth == Authentication.OPEN ) {
 			config.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE);
-		} else if ( auth.equals("WPA") ) { // WPA
+		} else if ( auth == Authentication.WPA_PSK ) {
 			config.preSharedKey = String.format("\"%s\"", password);
 			config.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.TKIP);
 			config.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.CCMP);
@@ -133,7 +135,7 @@ public class WifiProvisioner {
 			config.allowedPairwiseCiphers.set(WifiConfiguration.PairwiseCipher.CCMP);
 			config.allowedProtocols.set(WifiConfiguration.Protocol.RSN);
 		} else {
-			Log.e(TAG, "Unkown authentiation type: %s",auth);
+			Log.e(TAG, "Unkown authentiation type: %s", auth);
 			return null;
 		}
 		return config;

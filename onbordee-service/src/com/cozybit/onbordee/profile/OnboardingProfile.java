@@ -56,9 +56,7 @@ public class OnboardingProfile {
 	    }
 	};
 
-	/*
-	 * OPTIONAL VALUES FOR THE DIFFERENT CHARACTERISTICS
-	 */
+
 
 	public static enum STATES {
 		OFF, BOOTING, READY, CONNECTING, CONNECTED, FAILED
@@ -88,14 +86,17 @@ public class OnboardingProfile {
 	    }
 	}
 	
-	
+	/*
+	 * OPTIONAL VALUES FOR THE DIFFERENT CHARACTERISTICS
+	 */
+
 	// Definition of the different COMMANDS methods
 	public static enum COMMANDS {
 		CONNECT, DISCONNECT, RESET
 	};
 
 	// Definition of the different AUTH methods
-	public static enum AUTH {
-		NONE, WPA_PSK, WPA_EAP, IEEE8021X;
+	public static enum AUTH { 
+		OPEN, WEP, WPA_PSK, UNKNOWN;
 	}
 }

@@ -5,12 +5,14 @@ import java.util.Arrays;
 import com.cozybit.onbordee.ble.BleProvisioner;
 import com.cozybit.onbordee.manager.ConnectionManager;
 import com.cozybit.onbordee.profile.OnboardingProfile;
+import com.cozybit.onbordee.profile.OnboardingProfile.AUTH;
 import com.cozybit.onbordee.profile.OnboardingProfile.COMMANDS;
 import com.cozybit.onbordee.profile.OnboardingProfile.Characteristics;
 import com.cozybit.onbordee.profile.OnboardingProfile.EVENTS;
 import com.cozybit.onbordee.profile.OnboardingProfile.STATES;
 import com.cozybit.onbordee.utils.Log;
 import com.cozybit.onbordee.wifi.WifiProvisioner;
+import com.cozybit.onbordee.wifi.WifiProvisioner.Authentication;
 import com.cozybit.onbordee.wifi.WifiProvisioner.WifiProvisionerCallback;
 
 import android.content.Context;
@@ -49,7 +51,7 @@ public class OnboardingManager {
 		//public int channel = -1;
 		public int channel = 5;
 		//public int auth;
-		public int auth = OnboardingCommands.AUTH_WPA_PSK;
+		public Authentication auth = Authentication.UNKNOWN;
 		public String password;
 
 		public boolean validateSSID() {
@@ -60,26 +62,21 @@ public class OnboardingManager {
 			return (channel >= 1 && channel <= 13);
 		}
 
-		public boolean validateAuthentication() {
-			return (auth >= 0 && auth <=3);
-		}
-
 		public boolean validatePassword() {
-			if (auth != OnboardingCommands.AUTH_NONE )
+			if (auth != Authentication.OPEN )
 				return ( password != null && !password.isEmpty() );
 			return true;
 		}
 
 		public boolean validateCredentials() {
-			return ( validateSSID() && validateChannel() &&
-					validateAuthentication() && validatePassword() );
+			return ( validateSSID() && validateChannel() && validatePassword() );
 		}
 	}
-	
+
 	/*
 	 * Start of Callback implementations
 	 */
-	
+
 	//Callbacks from the Wifi Provisioner reporting Wifi related events 
 	private	 WifiProvisionerCallback mWifiProvisionerCallback = new WifiProvisionerCallback() { 
 		
@@ -167,8 +164,7 @@ public class OnboardingManager {
 				}
 				break;
 			
-			//TODO unignore THIS!!!
-			//case AUTH:
+			case AUTH:
 			case CHANNEL:
 			case PASS:
 			case SSID:
@@ -294,7 +290,14 @@ public class OnboardingManager {
 				
 				switch (type) {
 				case AUTH:
-					mCredentials.auth = data[0];
+					int index = (int) data[0];
+					AUTH auth = (index >= 0 && index < 4) ? AUTH.values()[index] : AUTH.UNKNOWN;
+					//Translate OnboardingProfile.AUTH to WifiProvisioner.Authentication values
+					if( auth == AUTH.OPEN ) mCredentials.auth = Authentication.OPEN;
+					else if( auth == AUTH.WEP ) mCredentials.auth = Authentication.WEP;
+					else if( auth == AUTH.WPA_PSK ) mCredentials.auth = Authentication.WPA_PSK;
+					else mCredentials.auth = Authentication.UNKNOWN;
+					 
 					break;
 				case CHANNEL:
 					mCredentials.channel = data[0];
@@ -313,7 +316,9 @@ public class OnboardingManager {
 				//Testing things
 				//mWifiProvisioner.connectTo("cozybit", null, 5, "WPA", "cozy but secure!");
 				//mWifiProvisioner.connectTo("MiFi", null, 5, "WPA", "holahola");
-				mWifiProvisioner.connectTo(mCredentials.SSID, null, mCredentials.channel, "WPA", mCredentials.password);
+				Log.d(TAG, "Oboarding paramterers -> SSID: %s; Ch: %d; Auth: %s; Pswd: %s", 
+						mCredentials.SSID, mCredentials.channel, mCredentials.auth, mCredentials.password);
+				mWifiProvisioner.connectTo(mCredentials.SSID, null, mCredentials.channel, mCredentials.auth, mCredentials.password);
 				updateState(STATES.CONNECTING);
 				if( !mCredentials.validateCredentials() ) {
 					Log.d(TAG, "Oboarding paramterers -> SSID: %s; Ch: %d; Auth: %d; Pswd: %s", 
