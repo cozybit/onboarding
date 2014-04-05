@@ -117,16 +117,33 @@ public class WifiProvisioner {
     	return false;
     }
 
-    //TODO: WEP and WPA PSK not supporte. Open and WPA2 PSK supported
 	private WifiConfiguration generateWifiConfiguration(String SSID, String BSSID, Authentication auth, String password) {
 		
 		WifiConfiguration config = new WifiConfiguration();
 		config.SSID = String.format("\"%s\"", SSID);
 		config.BSSID = BSSID;
 		config.status = WifiConfiguration.Status.ENABLED;
-		if ( auth == Authentication.OPEN ) {
+		
+		switch ( auth ) {
+		case OPEN:
 			config.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE);
-		} else if ( auth == Authentication.WPA_PSK ) {
+			break;
+			
+		case WEP:
+			config.wepKeys[0] = String.format("\"%s\"", password);
+			config.wepTxKeyIndex = 0;
+			config.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE);
+			config.allowedProtocols.set(WifiConfiguration.Protocol.RSN); 
+			config.allowedProtocols.set(WifiConfiguration.Protocol.WPA);
+			config.allowedAuthAlgorithms.set(WifiConfiguration.AuthAlgorithm.OPEN);
+			config.allowedAuthAlgorithms.set(WifiConfiguration.AuthAlgorithm.SHARED);
+			config.allowedPairwiseCiphers.set(WifiConfiguration.PairwiseCipher.CCMP);
+			config.allowedPairwiseCiphers.set(WifiConfiguration.PairwiseCipher.TKIP);
+			config.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.WEP40);
+			config.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.WEP104);
+			break;
+			
+		case WPA_PSK:
 			config.preSharedKey = String.format("\"%s\"", password);
 			config.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.TKIP);
 			config.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.CCMP);
@@ -134,20 +151,24 @@ public class WifiProvisioner {
 			config.allowedPairwiseCiphers.set(WifiConfiguration.PairwiseCipher.TKIP);
 			config.allowedPairwiseCiphers.set(WifiConfiguration.PairwiseCipher.CCMP);
 			config.allowedProtocols.set(WifiConfiguration.Protocol.RSN);
-		} else {
-			Log.e(TAG, "Unkown authentiation type: %s", auth);
-			return null;
+			break;
+			
+		default:
+			Log.w(TAG, "WARNING: Authentication % not supported!", auth);
+			config = null;
+			break;
 		}
+
 		return config;
 	}
-	
+
 	public boolean reconnectToNetwork() {
 		if(mWifiManager != null)
 			return mWifiManager.reconnect();
 		return false;
 	}
-   
-    public WifiConfiguration getCurrentWifiConfig() {
+
+	public WifiConfiguration getCurrentWifiConfig() {
     	if( mWifiManager != null ) {
 	    	String ssid = mWifiManager.getConnectionInfo().getSSID();
 	    	ssid = String.format("\"s%\"", ssid);
