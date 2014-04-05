@@ -1,12 +1,14 @@
 package com.cozybit.onbordee.manager;
 
+import java.util.Arrays;
+
 import com.cozybit.onbordee.ble.BleProvisioner;
-import com.cozybit.onbordee.ble.OnboardingGattService;
-import com.cozybit.onbordee.constants.OnboardingCommands;
-import com.cozybit.onbordee.constants.OnboardingCommands.LongStatus;
-import com.cozybit.onbordee.constants.OnboardingCommands.OnboardingStates;
 import com.cozybit.onbordee.manager.ConnectionManager;
-import com.cozybit.onbordee.manager.ConnectionManager.DataReceivedCallback.DataTypes;
+import com.cozybit.onbordee.profile.OnboardingProfile;
+import com.cozybit.onbordee.profile.OnboardingProfile.COMMANDS;
+import com.cozybit.onbordee.profile.OnboardingProfile.Characteristics;
+import com.cozybit.onbordee.profile.OnboardingProfile.EVENTS;
+import com.cozybit.onbordee.profile.OnboardingProfile.STATES;
 import com.cozybit.onbordee.utils.Log;
 import com.cozybit.onbordee.wifi.WifiProvisioner;
 import com.cozybit.onbordee.wifi.WifiProvisioner.WifiProvisionerCallback;
@@ -20,28 +22,22 @@ import android.os.Message;
 import android.os.Process;
 
 public class OnboardingManager {
-	
+
 	public final static String TAG = OnboardingManager.class.getName();
-	
-	enum States {
-		OFF, BOOTING, READY,
-		CONNECTING,	CONNECTED, FAILED
-	}
-	
-	public enum Events {
-		INIT, SHUT_DOWN,
-		WIFI_ON, WIFI_OFF, WIFI_FAILED, NO_WIFI,
-		PARAMETER_RECEIVED, INVALID_PARAMETERS, CONNECT_TO_WIFI, FORGET_WIFI,
-		WIFI_CONNECTED, WIFI_DISCONNECTED, WIFI_CONNECTING_UPDATE, WIFI_LINK_DISCONNECTED
-	}
+
+	/*
+	 * The STATES and EVENTS handled in this state machine are defined in the OnboardingProfiled.class
+	 * */
 
 	private Context mContext;
 	private HandlerThread mHandlerThread;
 	private Handler mHandler;
 	
-	private States mState;
-	private States mPreviusState;
-	private Message mLastMessage;
+	/* The states of this state machine are defined in OnboardingProfile */
+	private STATES mState = STATES.OFF;
+	private STATES mPreviusState;
+	private EVENTS mEvent = EVENTS.SHUT_DOWN;
+	private EVENTS mPreviousEvent;
 	
 	private WifiProvisioner mWifiProvisioner;
 	private BleProvisioner mBleProvisioner;
@@ -92,16 +88,16 @@ public class OnboardingManager {
 			
 			switch (status) {
 			case WIFI_OFF:
-				sendMessage(Events.WIFI_OFF);
+				sendMessage(EVENTS.WIFI_OFF);
 				break;
 			case WIFI_ON:
-				sendMessage(Events.WIFI_ON);
+				sendMessage(EVENTS.WIFI_ON);
 				break;
 			case WIFI_FAILED:
-				sendMessage(Events.WIFI_FAILED);
+				sendMessage(EVENTS.WIFI_FAILED);
 				break;
 			case NO_WIFI:
-				sendMessage(Events.NO_WIFI);
+				sendMessage(EVENTS.NO_WIFI);
 				break;
 			}
 		}
@@ -110,13 +106,13 @@ public class OnboardingManager {
 		public void onWifiLinkStatus(SupplicantState state) {
 			switch (state) {
 			case AUTHENTICATING:
-				sendMessage(Events.WIFI_CONNECTING_UPDATE, SupplicantState.AUTHENTICATING);
+				sendMessage(EVENTS.AUTHENTICATING);
 				break;
 			case ASSOCIATING:
-				sendMessage(Events.WIFI_CONNECTING_UPDATE, SupplicantState.ASSOCIATING);
+				sendMessage(EVENTS.ASSOCIATING);
 				break;
 			case DISCONNECTED:
-				sendMessage(Events.WIFI_LINK_DISCONNECTED);
+				sendMessage(EVENTS.WIFI_LINK_DISCONNECTED);
 				break;
 			default:
 				//Do nothing
@@ -124,18 +120,17 @@ public class OnboardingManager {
 			}
 		}
 		
-		@Override
 		public void onWifiNetworkStatus(DetailedState status) {
 			
 			switch (status) {
 			case OBTAINING_IPADDR:
-				sendMessage(Events.WIFI_CONNECTING_UPDATE, DetailedState.OBTAINING_IPADDR);
+				sendMessage(EVENTS.GETTING_IPADDR);
 				break;
 			case CONNECTED:
-				sendMessage(Events.WIFI_CONNECTED);
+				sendMessage(EVENTS.WIFI_CONNECTED);
 				break;
 			case DISCONNECTED:
-				sendMessage(Events.WIFI_DISCONNECTED);
+				sendMessage(EVENTS.WIFI_DISCONNECTED);
 				break;
 			case FAILED:
 				break;
@@ -150,29 +145,35 @@ public class OnboardingManager {
 	private ConnectionManager.DataReceivedCallback mDataReceivedCallback = new ConnectionManager.DataReceivedCallback() {
 
 		@Override
-		public void onDataReceived(DataTypes type, byte[] data) {
+		public void onDataReceived(OnboardingProfile.Characteristics type, byte[] data) {
 			
-			Log.d(TAG, "Received %s -> Int: %d | String %s", type, data[0], new String(data));
+			//Log.d(TAG, "Received %s -> Int: %d | String %s", type, data[0], new String(data));
+			Log.d(TAG, "Charac. Type %s; Value:%s", type, Arrays.toString(data));
 			
 			switch (type) {
-			case CMD:
-				byte cmd = data[0];
-				if ( cmd == OnboardingCommands.CMD_CONNECT) {
-					sendMessage(Events.CONNECT_TO_WIFI);
-				} else if ( cmd == OnboardingCommands.CMD_DISCONNECT) {
-					sendMessage(Events.FORGET_WIFI);
-				} else if ( cmd == OnboardingCommands.CMD_RESET ) {
+			case COMMAND:
+				
+				//Data should be the index of the enums
+				int cmd = (int) data[0];
+				
+				if ( cmd == COMMANDS.CONNECT.ordinal() ) {
+					sendMessage(EVENTS.CONNECT_TO_WIFI);
+				} else if ( cmd == COMMANDS.DISCONNECT.ordinal() ) {
+					sendMessage(EVENTS.FORGET_WIFI);
+				} else if ( cmd ==  COMMANDS.RESET.ordinal() ) {
 					//TODO
 				} else {
-					Log.d(TAG, "Unknown onboarding command:%d", cmd);
+					Log.d(TAG, "Unknown onboarding command: %d", cmd);
 				}
 				break;
+			
+			//TODO unignore THIS!!!
 			//case AUTH:
 			case CHANNEL:
 			case PASS:
 			case SSID:
 				Message msg = Message.obtain();
-				msg.what = Events.PARAMETER_RECEIVED.ordinal();
+				msg.what = EVENTS.PARAMETER_RECEIVED.ordinal();
 				msg.arg1 = type.ordinal();
 				msg.obj = data;
 				sendMessage(msg);
@@ -188,7 +189,7 @@ public class OnboardingManager {
 
 	public OnboardingManager(Context context) {
 		mContext = context;
-		mState = States.OFF;
+		mState = STATES.OFF;
 		mWifiProvisioner = new WifiProvisioner(mContext, mWifiProvisionerCallback);
 
 		//TODO: do you have to STOP the Handler
@@ -208,6 +209,14 @@ public class OnboardingManager {
 		return mDataReceivedCallback;
 	}
 	
+	public STATES getCurrentState() {
+		return mState;
+	}
+	
+	public EVENTS getCurrentEvent() {
+		return mEvent;
+	}
+	
 	public void setBleProvisioner(BleProvisioner bleProvisioner) {
 		mBleProvisioner = bleProvisioner;
 	}
@@ -218,16 +227,16 @@ public class OnboardingManager {
 			return;
 		}
 		
-		if( mState == States.OFF )
-			sendMessage(Events.INIT);
+		if( mState == STATES.OFF )
+			sendMessage(EVENTS.INIT);
 	}
 	
 	public boolean isRunning() {
-		return (mState != States.OFF);
+		return (mState != STATES.OFF);
 	}
 
 	public void shutDown() {
-		processMessage(Message.obtain(null, Events.SHUT_DOWN.ordinal()));
+		processMessage(Message.obtain(null, EVENTS.SHUT_DOWN.ordinal()));
 	}
 	
 	private void sendMessage(Message msg) {
@@ -250,97 +259,90 @@ public class OnboardingManager {
 
 	private void processMessage(Message msg) {
 		
-		States beforeEventState = mState;
+		STATES beforeEventState = mState;
 		
-		//received message
-		mLastMessage = msg;
-		Events event = Events.values()[msg.what];
+		EVENTS event = EVENTS.values()[msg.what];
+		if(mState != STATES.FAILED) updateEvent(event);
 		Log.d(TAG, "START: Event: %s", event);
 
 		switch(mState) {
 		case OFF:
 			
-			if( event == Events.INIT ) {
+			if( event == EVENTS.INIT ) {
 				mCredentials = new OnboardingCredentials();
 				mWifiProvisioner.init();
-		        updateState(States.BOOTING);
+		        updateState(STATES.BOOTING);
+		        updateEvent(EVENTS.NONE);
 			} 
 			break;
 		
 		case BOOTING:
 			
-			if( event == Events.WIFI_ON ) {
+			if( event == EVENTS.WIFI_ON ) {
 				mWifiProvisioner.flushAllConfiguredNetworks();
-				updateState(States.READY);
-			} else if ( event == Events.WIFI_OFF || event == Events.NO_WIFI ) {
-				updateState(States.FAILED);
+				updateState(STATES.READY);
+				updateEvent(EVENTS.NONE);
+			} else if ( event == EVENTS.WIFI_OFF || event == EVENTS.NO_WIFI || event == EVENTS.WIFI_FAILED ) {
+				updateState(STATES.FAILED);
 			}
 			break;
 			
 		case READY:
-			if( event == Events.PARAMETER_RECEIVED ) {
-				DataTypes type = DataTypes.values()[msg.arg1];
+			if( event == EVENTS.PARAMETER_RECEIVED ) {
+				OnboardingProfile.Characteristics type = OnboardingProfile.Characteristics.values()[msg.arg1];
 				byte[] data = (byte[]) msg.obj;
 				
-				if( type == DataTypes.AUTH )
+				switch (type) {
+				case AUTH:
 					mCredentials.auth = data[0];
-				else if( type == DataTypes.CHANNEL )
+					break;
+				case CHANNEL:
 					mCredentials.channel = data[0];
-				else if( type == DataTypes.PASS )
+					break;
+				case PASS:
 					mCredentials.password = new String(data);
-				else if( type == DataTypes.SSID )
+					break;
+				case SSID:
 					mCredentials.SSID = new String(data);
+					break;
+				}
 				
-				reportOnboardeeState(OnboardingStates.INITIALIZING, LongStatus.RECEVING_PARAMS);
+				updateState(STATES.READY);
 				
-			} else if( event == Events.CONNECT_TO_WIFI ) {
+			} else if( event == EVENTS.CONNECT_TO_WIFI ) {
 				//Testing things
 				//mWifiProvisioner.connectTo("cozybit", null, 5, "WPA", "cozy but secure!");
 				//mWifiProvisioner.connectTo("MiFi", null, 5, "WPA", "holahola");
 				mWifiProvisioner.connectTo(mCredentials.SSID, null, mCredentials.channel, "WPA", mCredentials.password);
-				updateState(States.CONNECTING);
-				reportOnboardeeState(OnboardingStates.CONNECTING, LongStatus.NONE);
+				updateState(STATES.CONNECTING);
 				if( !mCredentials.validateCredentials() ) {
 					Log.d(TAG, "Oboarding paramterers -> SSID: %s; Ch: %d; Auth: %d; Pswd: %s", 
 							mCredentials.SSID, mCredentials.channel, mCredentials.auth, mCredentials.password);
-					sendMessage(Events.INVALID_PARAMETERS);
+					sendMessage(EVENTS.INVALID_PARAMETERS);
 				}
 			}
 			
 			break;
 			
 		case CONNECTING:
-			if ( event == Events.INVALID_PARAMETERS ) {
-				reportOnboardeeState(OnboardingStates.FAILED, LongStatus.INVALID_PARAMS);
-				updateState(States.FAILED);
+			if ( event == EVENTS.INVALID_PARAMETERS ) {
+				updateState(STATES.FAILED);
 				
-			} else if ( event == Events.WIFI_CONNECTING_UPDATE ) {
-				Enum update = (Enum) msg.obj;
-				if( update == SupplicantState.AUTHENTICATING ) {
-					reportOnboardeeState(OnboardingStates.CONNECTING, LongStatus.AUTHING);
-				} else if( update == SupplicantState.ASSOCIATING ) {
-					reportOnboardeeState(OnboardingStates.CONNECTING, LongStatus.ASSOCIATING);
-				} else if( update == DetailedState.OBTAINING_IPADDR ) {
-					reportOnboardeeState(OnboardingStates.CONNECTING, LongStatus.GETTING_IP);
-				}
+			} else if ( event == EVENTS.WIFI_CONNECTED ) {
+				updateState(STATES.CONNECTED);
 				
-			} else if ( event == Events.WIFI_CONNECTED ) {
-				reportOnboardeeState(OnboardingStates.CONNECTED, LongStatus.NONE);
-				updateState(States.CONNECTED);
-				
-			} else if ( event == Events.WIFI_LINK_DISCONNECTED ) {
-				reportOnboardeeState(OnboardingStates.FAILED, LongStatus.WIFI_LINK_DISCONN);
-				updateState(States.FAILED);
+			} else if ( event == EVENTS.WIFI_LINK_DISCONNECTED ) {
+				updateState(STATES.FAILED);
 				
 			} 
 			break;
 			
 		case CONNECTED:
-			if ( event == Events.FORGET_WIFI ) {
+			if ( event == EVENTS.FORGET_WIFI ) {
 				mWifiProvisioner.flushAllConfiguredNetworks();
-				updateState(States.READY);
-			} else if( event == Events.WIFI_DISCONNECTED ) {
-				updateState(States.CONNECTING);
+				updateState(STATES.READY);
+			} else if( event == EVENTS.WIFI_DISCONNECTED ) {
+				updateState(STATES.CONNECTING);
 			} 
 			
 			break;
@@ -350,13 +352,13 @@ public class OnboardingManager {
 			break;
 		}
 		
-		if(mState != States.OFF) {
-			if( event == Events.SHUT_DOWN ) {
-	        	updateState(States.OFF);
+		if(mState != STATES.OFF) {
+			if( event == EVENTS.SHUT_DOWN ) {
+	        	updateState(STATES.OFF);
 	        	mWifiProvisioner.stop();
 	        	resetStateMachineVars();
-	        } else if ( event == Events.WIFI_OFF || event == Events.WIFI_FAILED ) {
-	        	updateState(States.FAILED);
+	        } else if ( event == EVENTS.WIFI_OFF || event == EVENTS.WIFI_FAILED ) {
+	        	updateState(STATES.FAILED);
 	        }
 		}
 		
@@ -367,17 +369,29 @@ public class OnboardingManager {
      * End of State Machine
      *------------------------*/
 	
-	private void updateState(States newState) {
+	private void updateState(STATES newState) {
 		mPreviusState = mState;
 		mState = newState;
-		Log.d(TAG, "state transition: %s -> %s", mPreviusState, mState);
+		
+		if (mBleProvisioner != null) {
+			if( !mBleProvisioner.updateCharacteristic(Characteristics.STATUS.uuid, (byte) newState.ordinal(), true) )
+				Log.e(TAG, "ERROR: bleProvisioner couldn't update the value of the characteristic %s", Characteristics.STATUS);
+			
+		} else
+			Log.w(TAG, "WARNING: bleProvisioner is being used but is NULL!");
 	}
 	
-	private void reportOnboardeeState(OnboardingStates states, LongStatus longStatus) {
-		mBleProvisioner.updateCharacteristic(OnboardingGattService.CHARACTERISTIC_STATUS, states.name().toString());
-		mBleProvisioner.updateCharacteristic(OnboardingGattService.CHARACTERISTIC_LONG_STATUS, longStatus.name().toString());
+	private void updateEvent(EVENTS event) {
+		mPreviousEvent = mEvent;
+		mEvent = event;
+		
+		if (mBleProvisioner != null) {
+			if( !mBleProvisioner.updateCharacteristic(Characteristics.LONG_STATUS.uuid, (byte) event.ordinal(), true) )
+				Log.e(TAG, "ERROR: bleProvisioner couldn't update the value of the characteristic %s", Characteristics.STATUS);
+		} else
+			Log.w(TAG, "WARNING: bleProvisioner is being used but is NULL!");
 	}
-	
+
 	private void resetStateMachineVars() {
 		mCredentials = null;
 	}
